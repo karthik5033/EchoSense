@@ -5,11 +5,14 @@ desktop.ini
 
 # Node.js / Next.js
 node_modules/
+**/node_modules/
 .next/
+**/.next/
 out/
 build/
 dist/
 .pnpm-store/
+**/.pnpm-store/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
