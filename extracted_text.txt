@@ -1,0 +1,393 @@
+Department of Information Science & Engineering
+Artificial Intelligence and Machine Learning
+IS353IA
+PROJECT SYNOPSIS
+Lab – Part B
+Title of Project:
+TopoAE: A Topological Machine Learning Framework for Structural Damage Precursor Detection from Smartphone Acoustic Emission Signals
+Student Name(s):
+Gagandeep Rai, Karthik K P
+USN / Reg. No.:
+1RV24IS040, 1RV24IS054
+Semester and Section:
+5th Semester , ISE-A section
+Lab Batch:
+A2
+Date of Submission:
+Academic Year:2026-27
+Abstract
+Structural health monitoring (SHM) of civil and mechanical infrastructures is of paramount importance to avoid catastrophic failure and assure operational safety. Conventional acoustic emission (AE) methods are capable of detecting early fracture processes with high sensitivity; however, they require costly and specialized ultrasonic transducers and high-speed data acquisition systems which drastically limits continuous and large-scale deployment. While commodity smartphone devices represent a low-cost and accessible edge-sensing solution, their built-in acoustic sensors have sensitivities in the audible bands and are highly sensitive to environmental amplitudes and noise.
+In this work, we propose TopoAE, a topological machine learning framework for smartphone-recorded AE signals aimed at structural damage precursor detection. We first reconstruct the underlying dynamical state-space of continuous acoustic time-series using Takens delay-coordinate embedding, followed by persistent homology-based topological data analysis to encode multiscale topological summaries as intrinsic geometric invariants of the signal, robust to AE measurement noise and monotonic distortions. We vectorize the topological persistence diagrams through persistence representations and train an unsupervised one-dimensional convolutional autoencoder (Conv1D-AE) on baseline undamaged structural responses. Damage precursor events are detected before macroscopic failure through statistical shifts of topological features in the latent space and change-point detection of signal reconstruction residuals. We evaluate TopoAE on benchmark acoustic datasets under different loading and boundary conditions. Our framework offers an objective foundation for accessible edge-based SHM solutions by enabling large-scale and noise-resilient AE monitoring of physical infrastructures while establishing a practical link between computational topology and operational safety.
+Keywords: 
+ Structural Health Monitoring, Acoustic Emission, Topological Data Analysis, Persistent Homology, Convolutional Autoencoder, Damage Precursor Detection, Smartphone Sensing
+Introduction
+Background
+Structural Health Monitoring (in short, SHM) refers to the process of measuring responses to derive information on changes occurring in a structure’s condition. Acoustic emission (AE) is a well-known non-destructive monitoring method, where AE signals linked to stress-related wave propagation are analyzed to derive information on processes occurring within the structure. Several recent studies have demonstrated the potential of machine learning in the analysis of AE data. Specifically, Barbosh et al. demonstrated the use of time-domain waveforms and a deep-learning model to predict structural damage-severity and approximate-location [1]. In another study, Shi et al. demonstrated fatigue-damage classification using amplitude-, energy-, duration- and frequency-based features extracted from the AE signals, and employing machine learning classifiers [2]. Additionally, it has been shown that employing deep-learning segmentation models can enable automated identification of AE event onsets [4].
+Smartphones have been utilized as an alternative for affordable sensing nodes for SHM. Figueiredo et al. presented the concept of bridge monitoring using a smartphone’s accelerometer [5], while in Sun’s study, wall condition was assessed using a vibration excitations, smartphone inertial sensors, and machine learning classifiers [6]. In a recent survey, Zhang et al. identified smartphones as a promising SHM platform, noting environmental disturbances, hardware variations, and other considerations as major challenges [7]. Smartphone microphones have also been utilized in structural acoustics; in the study by Sinthaworn et al., smartphone-recorded hammer-sounding impacts were classified to detect concrete delamination [8]. However, it should be noted that such an approach involves active acoustic sounding, as opposed to passive AE monitoring.
+Topological methods offer another avenue for time-series analysis. Sayyad and Bazzi presented the use of Takens delay embedding and persistent homology for time-series classification [9], while Lin et al. investigated the use of persistent-homology-based feature engineering for time series prediction tasks [10].
+Problem Statement
+Among the capabilities presented in the literature, these have been demonstrated individually or in partial combinations, but their integration for smartphone-recorded structural acoustic signals using topological representations for damage-related classification has not been demonstrated. The applicability of temporal change detection and independent anomaly validation to this sensing configuration also needs experimental evaluation.
+Motivation
+A smartphone-based acoustic sensing approach might offer a readily available platform to explore structural acoustic behavior without the assumption of the capabilities of dedicated AE instrumentation. But smartphone microphones have different sensing characteristics and bandwidth limitations from conventional AE sensors [7]. Thus, TopoAE is motivated by the need to experimentally ascertain if topological representations of smartphone-recorded structural acoustic signals contain useful information for identifying damage-related events or conditions, while also evaluating the limits of the sensing modality and the analytical pipeline proposed.
+Literature Survey / Review of Related Work
+Acoustic Emission-Based Structural Damage Detection
+Acoustic emission (AE) signals have increasingly been analyzed using machine-learning techniques in order to assess the damage of a structure. Barbosh et al. [1] proposed AE-DenseNet that directly processes time-domain AE waveforms for damage severity and approximate location prediction, demonstrating the possibility of learning structural information while bypassing conventional AE feature extraction. Shi et al. [2] instead made use of amplitude, count, energy, duration and frequency-related descriptors via machine-learning models to classify fatigue damage stages. Hamdi et al. [3] investigated signal decomposition and machine-learning methods for identifying crack-growth mechanisms of heterogeneous structures, while Melchiorre et al. [4] used a 1-D U-Net to automate AE event-onset detection.
+Figure 3.1.1
+. 1-D U-Net architecture used for acoustic-emission signal onset detection, reproduced from Melchiorre et al. [4]. 
+ Taken together, these studies establish AE event detection, feature-based classification and raw-waveform deep learning as viable approaches, but the selected studies made use of dedicated AE instrumentation rather than smartphone microphones.
+Figure 3.1.2.
+ Relationship between crack length and cumulative acoustic-emission count during fatigue loading for two specimens, reproduced from Shi et al. [2]. 
+Smartphone-Based Structural Health Monitoring
+Smartphones have also been investigated for their potential as affordable sensing platforms for structural monitoring. Figueiredo et al. [5] demonstrated bridge monitoring using smartphone accelerometer measurements while Sun [6] investigated vibration challenge-response sensing using smartphones inertial sensors and machine-learning classifiers. Finally, Zhang et al. [7] reviewed smartphone sensing for SHM identifying practical issues including environmental effects, synchronization, sensor limitations and cross-device consistency. In this context, [8] provide a closer acoustic precedent using the smartphone microphone to acquire hammer-sounding responses for concrete delamination classification. However, in this study is concerned with active hammer sounding, not passive conventional AE, and so smartphone microphones should not be considered equivalent to dedicated ultrasonic AE sensors.
+Topological Time-Series Representation
+Topological data-analysis methods offer an alternative representation to complex time-series signals. Sayyad and Bazzi [9] proposed TopTimeNet that uses Takens delay embedding and persistent homology to obtain geometric and topological descriptors for the purpose of time series classification. In turn, Lin et al. [10] proposed to incorporate the persistent-homology features into deep-learning architecture for time-series prediction. These works provide a methodological support for using Takens embeddings and persistent homology for constructing features, but none of them evaluate the approach on the smartphone-recorded structural acoustic signals. smartphone microphones should not be considered equivalent to dedicated ultrasonic AE sensors.
+Anomaly Detection and Temporal Change Detection
+SUnsupervised anomaly detection offers an alternative approach to structural monitoring where labelled damage data are scarce. Wang et al. [11] explored deep autoencoders with information fusion and active sensing for structural anomaly finding, but their measurements were made using accelerometers rather than smartphone acoustic sensors. Adams and MacKay [12] proposed Bayesian online changepoint detection of sequential information; however, the application to structural acoustic measurements has not been established in the selected literature pool. Such approaches can thus be considered as contributing methodological stages to be experimentally investigated as independent anomaly-validation and temporal-change-detection stages within TopoAE.
+Research Gap Summary
+Table 3.1. Research Gap Summary 
+Reference
+Key Contribution
+Limitation / Research Gap
+Barbosh et al., 2024 [1]
+The article describes the proposed AE-DenseNet for the task of damage-severity and approximate-location prediction from AE waveforms.
+The study used dedicated AE sensors and did not address the issue of smartphone acoustic sensing and topological features.
+Shi et al., 2024 [2]
+The authors applied conventional AE descriptors in combination with ML to classify fatigue-damage stages
+The study did not explore the issue of smartphone acoustic sensing and topological representations.
+Hamdi et al., 2024 [3]
+Application of AE signal processing and ML to crack-growth mechanisms.
+Utilizes conventional AE sensing; does not address smartphone acoustic or topological representations.
+Melchiorre et al., 2024 [4]
+Application of U-Net for automated AE event-onset detection.
+Utilizes conventional piezoelectric AE instrumentation; does not address smartphone microphones.
+Figueiredo et al., 2022 [5]
+Utilized smartphone accelerometer based bridge SHM.
+Utilizes accelerometer sensing rather than smartphone-microphone acoustic sensing.
+Sun, 2023 [6]
+Proposed smartphone vibration challenge-response sensing with ML.
+Uses active vibration and IMU sensing rather than acoustic emission.
+Zhang et al., 2026 [7]
+Reviewed smartphone sensing technologies for SHM and their limitations
+Does not demonstrate the proposed topological acoustic pipeline.
+Sinthaworn et al., 2026 [8]
+Used smartphone-microphone recordings and ML for concrete delamination detection.
+Uses active hammer sounding, not passive conventional AE; no Takens/PH representation.
+Sayyad and Bazzi, 2026 [9]
+Combined Takens embedding, persistent homology and classification for time-series data.
+Evaluated on nonlinear dynamical-system data, not structural acoustic signals.
+Lin et al., 2026 [10]
+Integrated persistent-homology features with deep-learning time-series models.
+Addresses time-series prediction rather than smartphone structural-acoustic damage detection.
+Wang et al., 2026 [11]
+Applied deep autoencoders for structural anomaly detection.
+Uses acceleration/CWT data rather than smartphone acoustic signals.
+Adams and MacKay, 2007 [12]
+Established Bayesian online changepoint detection for sequential data.
+Not validated for structural acoustic or smartphone sensing.
+Objectives
+The primary objectives of this project are:
+To 
+design and implement
+ a preprocessing and event-segmentation pipeline for smartphone-recorded structural acoustic signals to obtain suitable signal segments for subsequent analysis.
+To 
+develop
+ a topological signal-representation pipeline using 
+Takens delay embedding and persistent homology
+, and extract fixed-length topological features from the segmented acoustic signals.
+To 
+evaluate and compare
+ the ability of 
+Random Forest classification using topological features
+ to distinguish the experimentally defined structural conditions/events against conventional acoustic/AE features and an appropriate deep-learning baseline.
+To 
+evaluate
+ the use of 
+Bayesian online changepoint detection and autoencoder-based anomaly detection
+ for identifying and independently validating changes or anomalous events in the resulting signal/feature streams.
+Proposed Methodology
+System Architecture Overview
+Figure 5.1. Proposed TopoAE framework for topological analysis and classification of structural acoustic signals. 
+Dataset Description
+The proposed framework will be evaluated using publicly available acoustic emission (AE) datasets that include raw AE waveforms and their associated structural-condition or event labels. The main dataset used in this study will be prestressed Reinforced-Concrete (RC) bridge-girder AE dataset reported by D’Angela and Magliulo [13]. This dataset consists of raw AE recordings from four prestressed RC girders subjected to cyclic and monotonic four-point bending tests. The tests were performed using piezoelectric AE sensors at 10 MHz sampling frequency, and focused on cracks of low-to-moderate size. The dataset provides publicly available raw AE data for analysis [13]
+Figure 5.2.1. Experimental four-point loading configuration for the prestressed RC bridge girder used for acoustic emission testing, adapted from D’Angela and Magliulo [13]. 
+A secondary dataset provided by Siracusano et al. [14] will be used for initial model development and comparative evaluation. The dataset consists of 15,000 training and 1,650 testing AE events, each of which contains three classes of AE events (tensile, shear, and mixed-mode) and 1,000 time samples. The raw MATLAB files publicly distributed by the authors are sampled at a reduced sampling frequency of 500 kHz [14]. Mendeley Data
+The raw signals will undergo quality inspection, exploratory data analysis, normalization, noise handling, and event segmentation where required. Dataset partitions will be formed carefully to minimize data leakage, with specimen- or experiment-level separation being used where the available metadata permits.
+Table 5.2.1 Datasets used for evaluation 
+Dataset
+Source
+Format
+Size
+Classes / Conditions
+Prestressed RC Bridge-Girder AE Dataset
+D’Angela and Magliulo [13]
+Raw AE waveforms
+4 prestressed RC girders
+Loading stages and cracking progression
+Concrete AE Event Dataset
+Siracusano 
+et al.
+ [14]
+MATLAB 
+.mat
+15,000 training + 1,650 testing events
+Tensile, shear, mixed-mode
+https://data.mendeley.com/datasets/4ywc84t5gx/2
+Proposed Algorithm / Model
+The proposed 
+TopoAE
+ framework integrates topological signal representation with 
+machine-learning-based classification and anomaly analysis of smartphone-recorded structural acoustic signals. The core processing consists of 
+Takens delay embedding, persistent homology-based feature extraction, Random Forest classification, Bayesian online changepoint detection, and autoencoder-based anomaly validation
+.
+Figure 5.3.1. Topological feature extraction and classification framework based on time-series representations, adapted from Sayyad and Bazzi [9]. 
+5.3.1 Topological Feature Extraction
+For each preprocessed acoustic event, Takens delay embedding is used to reconstruct the 
+temporal dynamics of the signal:
+where 
+ is the sampled acoustic signal, 
+ is the time delay, and 
+ is the embedding dimension.
+The reconstructed point cloud is then processed using 
+persistent homology
+ to identify 
+topological features that persist across different scales. The resulting persistence information is 
+converted into a fixed-length numerical feature vector for machine-learning classification. The 
+use of Takens embedding and persistent homology is based on the methodology reported by 
+Sayyad and Bazzi [9].
+5.3.2 Random Forest Classification
+The extracted topological feature vectors are provided to a 
+Random Forest (RF) classifier
+ for 
+classification of the experimentally defined structural acoustic conditions/events.
+The RF model consists of multiple decision trees whose predictions are aggregated to obtain the 
+final class prediction. The number of trees, tree depth, minimum samples per split, and 
+class-weighting strategy will be determined experimentally using the collected dataset.
+Random Forest is used as the primary classifier because it provides a suitable machine-learning 
+model for evaluating the discriminative capability of the extracted topological features. It is 
+treated as an established classification technique rather than a novel contribution.
+5.3.3 Bayesian Online Changepoint Detection
+To analyse temporal changes in the recorded signal or derived feature stream, 
+Bayesian Online 
+Changepoint Detection (BOCD)
+ will be investigated. The method estimates the probability of 
+a change in the underlying statistical behaviour of a sequential signal and identifies candidate 
+change points.
+The approach is based on the Bayesian online changepoint framework proposed by Adams and 
+MacKay [12]. In TopoAE, this method will be applied to the selected sequential representation 
+after experimental evaluation of the appropriate input feature/score stream.
+Figure 5.4. Illustration of Bayesian online changepoint detection using run-length distributions, reproduced from Adams and MacKay [12]. 
+5.3.4 Autoencoder-Based Anomaly Validation
+An independently trained autoencoder will be used as an additional anomaly-analysis branch. 
+The autoencoder learns to reconstruct the representation of the training data, and reconstruction 
+error is used as an anomaly measure:
+where 
+ represents the input and 
+ represents its reconstructed output.
+Segments producing substantially higher reconstruction errors than the learned normal pattern 
+will be treated as candidate anomalous events. This branch is intended to provide an 
+independent validation of unusual events rather than directly replacing the TopoAE classifier. 
+The use of autoencoder-based anomaly detection is supported by Wang 
+et al.
+ [11].
+5.3.5 Comparison Models
+The proposed topological representation will be evaluated against two comparison approaches:
+Conventional acoustic/AE features:
+ amplitude-, energy-, duration-, count-, and frequency-related descriptors reported in acoustic-emission literature [2], [3].
+CNN baseline:
+ a convolutional neural-network model operating on the acoustic representation, providing a deep-learning comparison with the proposed topological feature approach [1].
+5.3.6 Proposed Algorithm
+Algorithm 1: TopoAE
+Input:
+ Smartphone-recorded structural acoustic signal 
+Output:
+ Classification result, detected temporal changes, and anomaly indicators
+Acquire the smartphone acoustic recording.
+Preprocess the signal and segment it into candidate acoustic events.
+Construct a Takens delay embedding using delay 
+ and embedding dimension 
+.
+Generate a reconstructed point cloud from the embedded signal.
+Compute persistent-homology representations of the point cloud.
+Extract a fixed-length topological feature vector.
+Train the Random Forest classifier using the extracted features.
+Apply Bayesian online changepoint detection to the selected sequential feature/score stream.
+Apply the independently trained autoencoder to obtain an anomaly score.
+Compare TopoAE with conventional acoustic/AE features and the CNN baseline.
+Evaluate all outputs against the experimentally established ground truth.
+Exact values for 
+, 
+, Random Forest hyperparameters, CNN architecture, and autoencoder 
+architecture will be finalized during implementation based on the collected dataset and 
+validation experiments.
+Implementation Plan (Phase-wise)
+Phase
+Task to be completed
+Activities involved
+Duration
+I
+Literature Review & Problem Definition
+Survey existing work, finalise problem statement, define scope
+2
+Weeks
+II
+Dataset Acquisition & Pre-processing
+Collect/download dataset, data cleaning, augmentation, EDA
+2
+Weeks
+III
+System Design & Architecture
+Design system block diagram, select models, prepare environment
+2
+Weeks
+IV
+Implementation & Training
+Code development, model training, hyperparameter tuning
+3
+Weeks
+V
+Evaluation & Testing
+Performance metrics, ablation study, comparison with baselines
+2Weeks
+VI
+Documentation & Reporting
+Final report, paper draft, presentation preparation
+2Weeks
+Tools & Technologies
+Category
+Tools / Technologies / Versions
+Programming Language
+Python 3.x 
+Frameworks / Libraries
+NumPy, SciPy, Pandas, scikit-learn, GUDHI, PyTorch, Matplotlib 
+Development Environment
+VS Code / Jupyter Notebook / Google Colab
+Database / Storage
+Local Storage — WAV, CSV, HDF5
+Hardware / Platform
+Laptop/PC; Google Colab GPU when required
+Version Control
+Git / GitHub 
+Other Tools
+Docker
+Expected Outcomes & Deliverables
+Upon successful completion of this project, the following outcomes are expected:
+Technical Outcomes
+A functional TopoAE pipeline for processing raw AE waveforms using preprocessing, Takens delay embedding, persistent homology and topological feature extraction.
+A trained Random Forest classifier using the extracted topological features for classification of experimentally defined AE/structural-event classes.
+A CNN baseline and a conventional acoustic/AE-feature baseline for comparative evaluation.
+An implemented Bayesian online changepoint detection module for analysing temporal changes in the selected signal/feature stream.
+An autoencoder based anomaly detection module for independent analysis of anomalies.
+A quantitative evaluation using accuracy, precision, recall, F1-score, confusion matrix and appropriate metrics for anomaly-detection.
+A comparative analysis determining if the proposed topological representation provides any useful information compared with conventional AE features and the CNN baseline.
+An ablation analysis examining the contribution of topological feature representation on the overall classification performance.
+Research Outcomes
+Experimental evaluation of persistent-homology-based representations for structural acoustic-emission signal analysis.
+Analysis of the applicability of the proposed TopoAE pipeline to publicly available structural AE datasets, including bridge-girder and concrete AE data.
+Identification of the strengths and limitations of topological features for structural-event classification and anomaly/change analysis.
+A documented methodology that can serve as a basis for future investigation of smartphone-based structural acoustic sensing.
+Deliverables Checklist
+Deliverable
+Target Timeline
+Synopsis / Proposal Document
+Week 2
+Literature Review Report
+Week 4
+Working Prototype / Baseline Model
+Week 8
+Final Trained Model + Code Repository
+Week 13
+Evaluation Report & Results
+Week 15
+Journal / Conference Paper Draft
+Week 17
+Final Project Report & Presentation
+Week 18
+Evaluation Metrics & Validation Plan
+The performance of the proposed TopoAE framework will be benchmarked on the basis of classification, anomaly-detection, and changepoint discovery metrics. In particular, the proposed method will be compared to conventional acoustic/AE features and the CNN baseline, using identical evaluation protocols.
+Classification Metrics
+For the task of classification, the following performance measures will be reported:
+• Accuracy, precision, recall, and F1-score
+• Confusion matrix
+• ROC-AUC, where applicable
+These metrics will be calculated for the TopoAE + random forest model, compared to the conventional acoustic/AE features baseline and the CNN baseline.
+Anomaly Detection Metrics
+For the task of anomaly detection with the autoencoders, the following performance measures will be reported:
+• Reconstruction error
+• ROC-AUC
+• PR-AUC, where applicable
+• Confusion matrix at a selected threshold
+Changepoint Detection Metrics
+For the task of changepoint detection, with the Bayesian online changepoint detection algorithm, the following performance measures will be reported:
+• Change-point precision/recall, where temporal ground-truth is available
+• Detection delay, defined as the difference between the reference change-point and the detected change-point
+Where temporal ground-truth is not available, the changepoint detection results will be reported in the exploratory analysis, rather than as a formal benchmark of damage onset detection performance
+Validation Strategy:
+To avoid overfitting on the level of individual specimens in the prestressed RC bridge-girder dataset, where possible, the specimens will be held out at the level of individual girders, so that training and test sets do not contain data from the same girder. 
+With only four girders available in the bridge dataset, leave-one-specimen-out validation will be considered, rather than hold-out of individual signal windows.
+ For the secondary concrete AE dataset, the initial training/test split will be respected, and additional grouped validation will be considered, if metadata on the specimens are available. 
+The following benchmarks will be considered:
+1. conventional acoustic/AE features + random forest
+2. CNN baseline
+3. topological features + random forest
+Additionally, an ablation study will be carried out, to assess the contribution of the topological representation, by comparing the TopoAE performance to reduced sets of features. The validation procedure will be consistent across benchmarks, in terms of data splits and performance metrics.
+Ethical Considerations:
+This project involves analysis of data from research datasets only, and does not involve collection/redistribution of patient data. 
+No sensitive information is expected to be present in the analyzed datasets. The datasets will be cited in accordance with their licenses/relevant publications.
+This project will not make claims of detecting damage on the basis of phone sensors, where conventional AE datasets are used – the distinction between the two types of data will be explicitly noted, where applicable.
+References
+[1] M. Barbosh, L. Ge, and A. Sadhu, “Automated crack identification in structures using acoustic waveforms and deep learning,” Journal of Infrastructure Preservation and Resilience, vol. 5, no. 1, Art. no. 10, 2024. doi: 10.1186/s43065-024-00102-2.
+[2] S. Shi, D. Yao, G. Wu, H. Chen, and S. Zhang, “Characterization of fatigue damage in Hadfield steel using acoustic emission and machine learning-based methods,” Sensors, vol. 24, no. 1, Art. no. 275, 2024. doi: 10.3390/s24010275.
+[3] S. E. Hamdi, M. Diakhate, J.-C. Kneip, Z. Hamdi, and J.-M. Jouvard, “Machine learning-enabled acoustic emission signal processing for real-time crack growth monitoring in heterogeneous 
+structures,” e-Journal of Nondestructive Testing, vol. 29, no. 7, 2024. doi: 10.58286/29716.
+[4] J. Melchiorre, L. D’Amato, F. Agostini, and A. M. Rizzo, “Acoustic emission onset time detection for structural monitoring with U-Net neural network architecture,” Developments in the Built Environment, vol. 18, Art. no. 100449, 2024. doi: 10.1016/j.dibe.2024.100449.
+[5] E. Figueiredo, I. Moldovan, P. Alves, H. Rebelo, and L. Souza, “Smartphone application for structural health monitoring of bridges,” Sensors, vol. 22, no. 21, Art. no. 8483, 2022. doi: 10.3390/s22218483.
+[6] W. Sun, “VibWall: Smartphone’s vibration challenge-response for wall crack detection,” ACM Journal on Computing and Sustainable Societies, vol. 1, no. 1, Art. no. 5, pp. 1–24, 2023. doi: 10.1145/3616387.
+[7] X. Zhang, R. P. Porro, J. Xu, H. Zhu, and Z. Li, “A review of smartphone sensing for structural health monitoring,” Journal of Civil Structural Health Monitoring, vol. 16, Art. no. 17, 2026. doi: 10.1007/s13349-025-01037-2.
+[8] S. Sinthaworn, N. Duangsuwong, B. Changduangjit, S. Sinthaworn, and N. Leelawat, “Automated concrete delamination detection using acoustic sounding and machine learning,” E3S Web of Conferences, vol. 744, Art. no. 04004, 2026. doi: 10.1051/e3sconf/202674404004.
+[9] S. Sayyad and S. Bazzi, “TopTimeNet: Topologically-assisted time-series classification model,” arXiv preprint arXiv:2609.39792v1, 2026.
+[10] Z. Lin, N. F. S. Zulkepli, M. S. M. Kasihmuddin, and R. U. Gobithaasan, “Topological feature engineering and persistent homology hybrid deep learning model for time-series prediction,” 
+Complex & Intelligent Systems, vol. 12, Art. no. 197, 2026. doi: 10.1007/s40747-026-02315-2.
+[11] Z. Wang, S. A. Khokhar, M. R. Jahanshahi, Y. Fu, I. Bilionis, A. Maghareh, and S. J. Dyke, “Unsupervised anomaly detection based on deep autoencoders, information fusion, and active sensing,” Structural Health Monitoring, 2026. doi: 10.1177/14759217251410304.
+[12] R. P. Adams and D. J. C. MacKay, “Bayesian online changepoint detection,” arXiv preprint arXiv:0710.3742v1, 2007. doi: 10.48550/arXiv.0710.3742.
+[13] D. D’Angela and G. Magliulo, “Acoustic emission testing of prestressed RC bridge girders: Methodology, results, and dataset,” Materials and Structures, vol. 59, Art. no. 85, 2026. doi: 
+10.1617/s11527-026-02973-1.
+[14] G. Siracusano, F. Garescì, G. Finocchio, R. Tomasello, F. Lamonaca, C. Scuro, M. Carpentieri, M. Chiappini, and A. La Corte, “Automatic crack classification by exploiting statistical event descriptors for deep learning,” Applied Sciences, vol. 11, no. 24, Art. no. 12059, 2021. doi: 10.3390/app112412059.
+Declaration & Signatures
+I/We hereby declare that this project synopsis is our original work carried out as part of the the AI and Ml Course . . This work has not been submitted elsewhere for any other degree or examination. All sources of information have been duly cited and acknowledged.
+Student Signature:
+[Name & USN]
+Date: 
+Guide Signature:
+[Dr./Prof. Name, Designation] Date: 
+Appendix: Formatting & Submission Guidelines
+A. Document Formatting Requirements
+Parameter
+Specification
+Paper Size
+A4 (210 × 297 mm)
+Margins
+Top: 1 inch | Bottom: 1 inch | Left: 1.25 inch | Right: 1 inch
+Font (Body)
+Times New Roman 12pt OR Calibri 11pt
+Font (Headings)
+Same font, Bold: H1 = 14pt, H2 = 12pt
+Line Spacing
+1.5 lines (body text) | Single (tables, captions, references)
+Paragraph Spacing
+6pt before, 6pt after
+Alignment
+Justified (body) | Centre (title, headings) | Left (bullets)
+Page Numbers
+Bottom centre, starting from page 1 of main content
+Header
+Project Title (abbreviated, ≤60 chars) — right-aligned
+Total Length
+Minimum 10 pages, Maximum 20 pages (excluding references & appendices)
+Figures & Tables
+Numbered (Figure 1.1,1.2 , Table 1.1, 1.2 according to the chapter in which it appears ), with captions below figures and above tables
+File Format
+Submit as .docx AND .pdf (both required) in the Google classroom folder assigned
+Naming Convention
+USNs_StudentNames.doc (e.g., 1RV24ISE001_002 _Name1_Name2.pdf)
+Academic Integrity Note
+The use of AI-generated content (ChatGPT, Copilot, etc.) for generating the entire document may not be adopted. You may take the help for editing and grammar check. Pleae disclose this at the end of the document. Also cite any figure that you have taken from any existing source.
