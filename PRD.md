@@ -4,8 +4,8 @@
 
 **Document Version:** 1.0.0
 **Date:** November 1, 2026
-**Authors:** Gagandeep Rai, Karthik K P
-**Affiliation:** RV University, Department of Information Science & Engineering
+**Authors:** EchoSense Research & Industrial Diagnostics Engineering Team
+**Affiliation:** Autonomous Structural Health Monitoring & NDT Division
 **Status:** Draft — Pending Review
 
 ---
@@ -964,7 +964,7 @@ The following items are **explicitly excluded** from this product version:
 >
 > | Version | Date | Author | Changes |
 > |---|---|---|---|
-> | 1.0.0 | 2026-11-01 | Gagandeep Rai, Karthik K P | Initial PRD draft |
+> | 1.0.0 | 2026-11-01 | EchoSense Engineering Team | Initial PRD draft |
 
 ---
 

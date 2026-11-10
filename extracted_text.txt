@@ -1,20 +1,8 @@
-Department of Information Science & Engineering
+EchoSense Structural Diagnostics Research
 Artificial Intelligence and Machine Learning
-IS353IA
-PROJECT SYNOPSIS
-Lab – Part B
+PROJECT SPECIFICATION & SYNOPSIS
 Title of Project:
 TopoAE: A Topological Machine Learning Framework for Structural Damage Precursor Detection from Smartphone Acoustic Emission Signals
-Student Name(s):
-Gagandeep Rai, Karthik K P
-USN / Reg. No.:
-1RV24IS040, 1RV24IS054
-Semester and Section:
-5th Semester , ISE-A section
-Lab Batch:
-A2
-Date of Submission:
-Academic Year:2026-27
 Abstract
 Structural health monitoring (SHM) of civil and mechanical infrastructures is of paramount importance to avoid catastrophic failure and assure operational safety. Conventional acoustic emission (AE) methods are capable of detecting early fracture processes with high sensitivity; however, they require costly and specialized ultrasonic transducers and high-speed data acquisition systems which drastically limits continuous and large-scale deployment. While commodity smartphone devices represent a low-cost and accessible edge-sensing solution, their built-in acoustic sensors have sensitivities in the audible bands and are highly sensitive to environmental amplitudes and noise.
 In this work, we propose TopoAE, a topological machine learning framework for smartphone-recorded AE signals aimed at structural damage precursor detection. We first reconstruct the underlying dynamical state-space of continuous acoustic time-series using Takens delay-coordinate embedding, followed by persistent homology-based topological data analysis to encode multiscale topological summaries as intrinsic geometric invariants of the signal, robust to AE measurement noise and monotonic distortions. We vectorize the topological persistence diagrams through persistence representations and train an unsupervised one-dimensional convolutional autoencoder (Conv1D-AE) on baseline undamaged structural responses. Damage precursor events are detected before macroscopic failure through statistical shifts of topological features in the latent space and change-point detection of signal reconstruction residuals. We evaluate TopoAE on benchmark acoustic datasets under different loading and boundary conditions. Our framework offers an objective foundation for accessible edge-based SHM solutions by enabling large-scale and noise-resilient AE monitoring of physical infrastructures while establishing a practical link between computational topology and operational safety.

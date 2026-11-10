@@ -4,7 +4,7 @@
 
 This document outlines the **30-Phase Engineering & Research Roadmap** for **EchoSense** — a full-stack topological machine learning framework for detecting structural damage precursors from smartphone acoustic emission (AE) signals.
 
-The timeline spans **18 to 20 weeks** (totaling ~90 business days / ~180 person-days across a two-person engineering team: Gagandeep Rai & Karthik K P).
+The timeline spans **18 to 20 weeks** (totaling ~90 business days across the engineering and research team).
 
 ---
 
