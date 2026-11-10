@@ -206,7 +206,7 @@ export default function DashboardPage() {
       {/* 4 Key Summary Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Card 1: Total Analyses */}
-        <Card className="border border-border bg-card p-4 flex flex-col justify-between shadow-sm">
+        <Card className="border border-border bg-card p-4 flex flex-col justify-between shadow-sm h-full">
           <div>
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-muted-foreground">Total Analyses</span>
@@ -216,7 +216,7 @@ export default function DashboardPage() {
             </div>
             <div className="mt-2 flex items-baseline gap-2">
               <span className="text-2xl font-bold font-mono text-foreground">{computedStats.totalAnalyses}</span>
-              <span className="text-xs font-mono text-muted-foreground flex items-center gap-0.5">
+              <span className="text-xs font-mono text-muted-foreground flex items-center gap-0.5 whitespace-nowrap">
                 <TrendingUp className="h-3 w-3" /> +14 this week
               </span>
             </div>
@@ -225,7 +225,7 @@ export default function DashboardPage() {
         </Card>
 
         {/* Card 2: Active Monitors */}
-        <Card className="border border-border bg-card p-4 flex flex-col justify-between shadow-sm">
+        <Card className="border border-border bg-card p-4 flex flex-col justify-between shadow-sm h-full">
           <div>
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-muted-foreground">Active Monitors</span>
@@ -235,14 +235,14 @@ export default function DashboardPage() {
             </div>
             <div className="mt-2 flex items-baseline gap-2">
               <span className="text-2xl font-bold font-mono text-foreground">{computedStats.activeMonitors}</span>
-              <span className="text-xs font-medium text-muted-foreground">Sensor Nodes</span>
+              <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">Sensor Nodes</span>
             </div>
           </div>
           <p className="mt-2 text-[11px] text-muted-foreground">Streaming live AE at &lt; 2s detection latency</p>
         </Card>
 
         {/* Card 3: Benchmark Accuracy */}
-        <Card className="border border-border bg-card p-4 flex flex-col justify-between shadow-sm">
+        <Card className="border border-border bg-card p-4 flex flex-col justify-between shadow-sm h-full">
           <div>
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-muted-foreground">Benchmark Accuracy</span>
@@ -252,14 +252,14 @@ export default function DashboardPage() {
             </div>
             <div className="mt-2 flex items-baseline gap-2">
               <span className="text-2xl font-bold font-mono text-foreground">{computedStats.meanAccuracy}%</span>
-              <span className="text-xs font-mono text-muted-foreground">AUC 0.978 (F1: {computedStats.meanF1})</span>
+              <span className="text-xs font-mono text-muted-foreground whitespace-nowrap">AUC 0.978</span>
             </div>
           </div>
           <p className="mt-2 text-[11px] text-muted-foreground">TopoAE vs 86.2% conventional AE baseline</p>
         </Card>
 
         {/* Card 4: Precursors Flagged */}
-        <Card className="border border-border bg-card p-4 flex flex-col justify-between shadow-sm">
+        <Card className="border border-border bg-card p-4 flex flex-col justify-between shadow-sm h-full">
           <div>
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-muted-foreground">Precursors Flagged</span>
@@ -270,10 +270,10 @@ export default function DashboardPage() {
             </div>
             <div className="mt-2 flex items-baseline gap-2">
               <span className="text-2xl font-bold font-mono text-primary">{computedStats.damageAlerts}</span>
-              <span className="text-xs font-mono text-muted-foreground">Active Alert Runs</span>
+              <span className="text-xs font-mono text-muted-foreground whitespace-nowrap">Active Alerts</span>
             </div>
           </div>
-          <p className="mt-2 text-[11px] text-muted-foreground">Early warning lead: 340 ms prior to macro-crack</p>
+          <p className="mt-2 text-[11px] text-muted-foreground">Precursor events before macroscopic crack</p>
         </Card>
       </div>
 
