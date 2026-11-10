@@ -1,8 +1,8 @@
 {
-  "name": "echosense-dashboard",
+  "name": "enterprise-ui-template",
   "version": "1.0.0",
   "private": true,
-  "description": "EchoSense: A Topological Machine Learning Framework for Structural Damage Precursor Detection from Smartphone Acoustic Emission Signals",
+  "description": "Standalone UI & Route Skeleton Template with Lorem Ipsum content",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -30,3 +30,4 @@
     "typescript": "^5"
   }
 }
+
