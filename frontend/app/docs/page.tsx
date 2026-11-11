@@ -72,6 +72,7 @@ export default function DocsPage() {
   const [copiedRaw, setCopiedRaw] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isSubNavCollapsed, setIsSubNavCollapsed] = useState(false);
+  const mainContentRef = React.useRef<HTMLElement>(null);
 
   // Read URL query or hash on mount if present
   useEffect(() => {
@@ -96,6 +97,7 @@ export default function DocsPage() {
     if (typeof window !== "undefined") {
       window.history.pushState(null, "", `/docs?topic=${topicId}`);
     }
+    mainContentRef.current?.scrollTo({ top: 0, behavior: "smooth" });
     // Reset code tab to available snippet
     const art = DOC_ARTICLES[topicId];
     if (art?.content.codeSnippets) {
@@ -135,11 +137,11 @@ ${currentArticle.content.overviewText}`;
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#111115] text-[#e4e4e7] flex flex-col font-sans selection:bg-[#FF5500] selection:text-white">
+    <div className="h-screen bg-[#111115] text-[#e4e4e7] flex flex-col font-sans overflow-hidden selection:bg-[#FF5500] selection:text-white">
       {/* ========================================================= */}
       {/* 1. TOP GLOBAL NAVIGATION HEADER                           */}
       {/* ========================================================= */}
-      <header className="sticky top-0 z-40 h-14 border-b border-[#212128] bg-[#111115]/95 backdrop-blur-md px-4 sm:px-6 flex items-center justify-between select-none">
+      <header className="h-14 shrink-0 border-b border-[#212128] bg-[#111115]/95 backdrop-blur-md px-4 sm:px-6 flex items-center justify-between select-none z-40">
         {/* Left: Brand + Docs Pill */}
         <div className="flex items-center gap-3">
           <Link href="/" className="flex items-center gap-2 group">
@@ -193,12 +195,12 @@ ${currentArticle.content.overviewText}`;
       {/* ========================================================= */}
       {/* 2. DUAL-SIDEBAR & MAIN DOCUMENTATION VIEWPORT             */}
       {/* ========================================================= */}
-      <div className="flex flex-1 min-h-[calc(100vh-3.5rem)]">
+      <div className="flex flex-1 h-[calc(100vh-3.5rem)] overflow-hidden">
         {/* ------------------------------------------------------- */}
         {/* PRIMARY SIDEBAR (Left Column: Categories & Core Hub)    */}
         {/* ------------------------------------------------------- */}
-        <aside className="w-60 border-r border-[#212128] bg-[#111115] shrink-0 p-4 hidden lg:flex flex-col justify-between overflow-y-auto select-none">
-          <div className="space-y-6">
+        <aside className="w-60 h-full border-r border-[#212128] bg-[#111115] shrink-0 p-4 hidden lg:flex flex-col select-none">
+          <div className="flex-1 overflow-y-auto space-y-6 pr-1">
             {DOCS_NAV_GROUPS.map((group) => (
               <div key={group.name} className="space-y-1">
                 <span className="text-[11px] font-mono font-semibold tracking-wider text-zinc-500 uppercase px-2 mb-2 block">
@@ -235,7 +237,7 @@ ${currentArticle.content.overviewText}`;
           </div>
 
           {/* Sidebar Footer info */}
-          <div className="pt-6 border-t border-[#1d1d24] text-[11px] font-mono text-zinc-500 space-y-1">
+          <div className="pt-4 mt-auto border-t border-[#1d1d24] text-[11px] font-mono text-zinc-500 space-y-1 shrink-0">
             <div className="flex items-center justify-between">
               <span>Spec v2.4.0</span>
               <span className="text-zinc-400">EN 1330-9</span>
@@ -250,8 +252,8 @@ ${currentArticle.content.overviewText}`;
         {/* SECONDARY SIDEBAR (Contextual Sub-Nav Tree)             */}
         {/* ------------------------------------------------------- */}
         {!isSubNavCollapsed && (
-          <aside className="w-56 border-r border-[#212128] bg-[#141419] shrink-0 p-4 hidden md:flex flex-col justify-between overflow-y-auto select-none">
-            <div className="space-y-5">
+          <aside className="w-56 h-full border-r border-[#212128] bg-[#141419] shrink-0 p-4 hidden md:flex flex-col select-none">
+            <div className="flex-1 overflow-y-auto space-y-5 pr-1">
               {/* Back / Category Root Label */}
               <div className="pb-2 border-b border-[#22222a]">
                 <span className="text-[10px] font-mono font-bold tracking-wider text-[#FF5500] uppercase block">
@@ -311,7 +313,7 @@ ${currentArticle.content.overviewText}`;
             {/* Collapse toggle */}
             <button
               onClick={() => setIsSubNavCollapsed(true)}
-              className="flex items-center gap-1.5 text-[11px] text-zinc-500 hover:text-zinc-300 pt-4 border-t border-[#202028] cursor-pointer"
+              className="flex items-center gap-1.5 text-[11px] text-zinc-500 hover:text-zinc-300 pt-3 mt-auto shrink-0 border-t border-[#202028] cursor-pointer"
             >
               <ChevronLeft className="w-3.5 h-3.5" />
               <span>Hide sub-nav</span>
@@ -322,7 +324,10 @@ ${currentArticle.content.overviewText}`;
         {/* ------------------------------------------------------- */}
         {/* MAIN DOCUMENTATION ARTICLE PANE                         */}
         {/* ------------------------------------------------------- */}
-        <main className="flex-1 overflow-y-auto px-6 sm:px-10 lg:px-12 py-10 max-w-5xl mx-auto">
+        <main
+          ref={mainContentRef}
+          className="flex-1 h-full overflow-y-auto px-6 sm:px-10 lg:px-12 py-10 max-w-5xl mx-auto"
+        >
           {/* Breadcrumb / Category Kicker */}
           <div className="flex items-center justify-between pb-3">
             <div className="flex items-center gap-2 text-xs font-mono text-zinc-500 uppercase tracking-wider">
