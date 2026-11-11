@@ -220,3 +220,13 @@ body {
   animation: marquee 35s linear infinite;
 }
 
+@keyframes pulseDash {
+  0% {
+    stroke-dashoffset: 24;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+
