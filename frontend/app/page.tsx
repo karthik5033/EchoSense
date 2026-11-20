@@ -492,6 +492,7 @@ const CONSOLE_DEMO_QUERIES = [
 ];
 
 export default function EchoSenseLandingPage() {
+  const [showcaseMode, setShowcaseMode] = useState<"video" | "interactive">("video");
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [activeTimeRange, setActiveTimeRange] = useState<"15m" | "1h" | "1d">("1h");
   const [selectedDbTab, setSelectedDbTab] = useState<"tables" | "docs" | "vectors">("tables");
@@ -720,10 +721,65 @@ export default function EchoSenseLandingPage() {
           <span>Topological Data Analysis &amp; BOCD engine included</span>
         </div>
 
+        {/* Showcase Mode Switcher (Video Demo vs Interactive Console) */}
+        <div className="mt-8 flex items-center justify-center gap-2 select-none">
+          <div className="inline-flex items-center p-1 rounded-xl border border-[#272733] bg-[#141419] shadow-lg">
+            <button
+              onClick={() => setShowcaseMode("video")}
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+                showcaseMode === "video"
+                  ? "bg-[#252530] text-white shadow-sm border border-[#343444]"
+                  : "text-zinc-400 hover:text-white"
+              }`}
+            >
+              <Play className="w-3.5 h-3.5 text-[#FF5500]" />
+              <span>Production Video Demo (1080p Loop)</span>
+            </button>
+            <button
+              onClick={() => setShowcaseMode("interactive")}
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+                showcaseMode === "interactive"
+                  ? "bg-[#252530] text-white shadow-sm border border-[#343444]"
+                  : "text-zinc-400 hover:text-white"
+              }`}
+            >
+              <Activity className="w-3.5 h-3.5 text-[#FF5500]" />
+              <span>Interactive Sandbox</span>
+            </button>
+          </div>
+        </div>
+
         {/* ========================================================= */}
-        {/* INTERACTIVE SHOWCASE CONSOLE (Acoustics & TDA)             */}
+        {/* HERO SHOWCASE DISPLAY                                     */}
         {/* ========================================================= */}
-        <div className="mt-12 w-full max-w-6xl mx-auto rounded-2xl border border-[#272733] bg-[#16161b] shadow-[0_25px_80px_rgba(0,0,0,0.8)] overflow-hidden text-left text-xs">
+        {showcaseMode === "video" ? (
+          <div className="mt-8 w-full max-w-6xl mx-auto rounded-2xl border border-[#272733] bg-[#0c1017] shadow-[0_25px_80px_rgba(0,0,0,0.85)] overflow-hidden relative group">
+            {/* Ambient orange glow effect */}
+            <div className="absolute -inset-1 bg-gradient-to-r from-[#FF5500]/15 via-transparent to-[#FF5500]/15 rounded-2xl blur-xl opacity-40 group-hover:opacity-70 transition duration-500 pointer-events-none" />
+
+            <div className="relative rounded-2xl overflow-hidden bg-[#0c1017]">
+              <video
+                autoPlay
+                loop
+                muted
+                playsInline
+                poster="/images/EchoSense_telemetry_poster.jpg"
+                className="w-full h-auto block select-none rounded-2xl shadow-2xl"
+              >
+                <source src="/videos/EchoSense_telemetry_loop_1080p.mp4" type="video/mp4" />
+              </video>
+
+              {/* Telemetry stream overlay badge */}
+              <div className="absolute top-3 right-3 sm:top-4 sm:right-4 flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/70 backdrop-blur-md border border-white/10 text-[11px] font-mono text-zinc-300 select-none shadow-xl">
+                <span className="w-2 h-2 rounded-full bg-[#FF5500] animate-ping" />
+                <span className="text-white font-semibold">10 MS/s Telemetry Stream</span>
+                <span className="text-zinc-600 hidden sm:inline">•</span>
+                <span className="text-emerald-400 hidden sm:inline">Seamless Loop</span>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="mt-8 w-full max-w-6xl mx-auto rounded-2xl border border-[#272733] bg-[#16161b] shadow-[0_25px_80px_rgba(0,0,0,0.8)] overflow-hidden text-left text-xs">
           
           <div className="flex items-center justify-between px-4 py-2.5 border-b border-[#23232c] bg-[#141418]">
             <div className="flex items-center gap-3">
@@ -1183,6 +1239,7 @@ export default function EchoSenseLandingPage() {
             </main>
           </div>
         </div>
+        )}
       </section>
 
       {/* ========================================================= */}
