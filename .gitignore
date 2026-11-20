@@ -87,3 +87,7 @@ models/*.onnx
 *.swp
 *.swo
 
+
+# Archives and raw root media
+*.zip
+/*.mp4
