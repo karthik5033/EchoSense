@@ -26,8 +26,12 @@ export function TelemetryScreen({ stats }: Props) {
   const socketRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
-    // Try connecting to live WebSocket server
-    const wsUrl = process.env.EXPO_PUBLIC_WS_URL || 'ws://10.0.2.2:8000/ws/monitoring/mobile-telemetry';
+    // Construct robust WebSocket URL pointing to /ws/monitoring/mobile-telemetry
+    let baseWs = process.env.EXPO_PUBLIC_WS_URL || 'ws://192.168.0.105:8000';
+    const wsUrl = baseWs.includes('/ws/monitoring') 
+      ? baseWs 
+      : `${baseWs.replace(/\/+$/, '')}/ws/monitoring/mobile-telemetry`;
+
     try {
       const ws = new WebSocket(wsUrl);
       socketRef.current = ws;

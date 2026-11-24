@@ -46,10 +46,14 @@ export default function App() {
           </View>
         </View>
 
-        <View style={[styles.statusPill, isOnline ? styles.statusOnline : styles.statusOffline]}>
+        <TouchableOpacity 
+          onPress={loadData}
+          activeOpacity={0.7}
+          style={[styles.statusPill, isOnline ? styles.statusOnline : styles.statusOffline]}
+        >
           <View style={[styles.statusDot, isOnline ? styles.dotOnline : styles.dotOffline]} />
-          <Text style={styles.statusText}>{isOnline ? 'LIVE API' : 'OFFLINE'}</Text>
-        </View>
+          <Text style={styles.statusText}>{isOnline ? 'LIVE API' : 'OFFLINE (TAP RETRY)'}</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Navigation Tabs */}

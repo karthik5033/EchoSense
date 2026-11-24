@@ -39,8 +39,10 @@ manager = ConnectionManager()
 
 CRACK_MODES = ["Tensile Micro-Crack", "Shear Interface Slip", "Mixed Fracture"]
 
+@router.websocket("/ws")
+@router.websocket("/")
 @router.websocket("/ws/monitoring/{session_id}")
-async def websocket_monitoring_endpoint(websocket: WebSocket, session_id: str):
+async def websocket_monitoring_endpoint(websocket: WebSocket, session_id: str = "default"):
     """
     Real-time acoustic emission telemetry stream (10 Hz).
     Simulates high-speed streaming AE hits, BOCD changepoint probabilities,
