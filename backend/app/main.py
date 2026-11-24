@@ -8,7 +8,7 @@ from contextlib import asynccontextmanager
 import os
 from app.core.config import settings
 from app.core.database import engine, Base
-from app.api import auth, dashboard, signals, analysis, websocket as ws_api
+from app.api import auth, dashboard, signals, analysis, localization, system, websocket as ws_api
 
 limiter = Limiter(key_func=get_remote_address, default_limits=["120/minute"])
 
@@ -51,8 +51,8 @@ async def add_security_headers(request: Request, call_next):
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.BACKEND_CORS_ORIGINS,
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -62,6 +62,8 @@ app.include_router(auth.router, prefix=settings.API_V1_STR)
 app.include_router(dashboard.router, prefix=settings.API_V1_STR)
 app.include_router(signals.router, prefix=settings.API_V1_STR)
 app.include_router(analysis.router, prefix=settings.API_V1_STR)
+app.include_router(localization.router, prefix=settings.API_V1_STR)
+app.include_router(system.router, prefix=settings.API_V1_STR)
 app.include_router(ws_api.router, prefix=settings.API_V1_STR)
 app.include_router(ws_api.router) # Root /ws mount for direct websocket clients
 
