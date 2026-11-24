@@ -1,4 +1,6 @@
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || "http://192.168.0.105:8000/api/v1";
+import { Platform } from 'react-native';
+
+export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || "http://192.168.0.105:8000/api/v1";
 
 export interface DashboardStats {
   status: string;
@@ -60,22 +62,110 @@ export interface AnalysisSummary {
   };
 }
 
-export async function checkBackendHealth(): Promise<boolean> {
+export interface ClientLogEntry {
+  id: string;
+  timestamp: string;
+  source: string;
+  level: string;
+  context: string;
+  message: string;
+  stack?: string;
+  details?: Record<string, any>;
+}
+
+// In-memory diagnostic log buffer for instant viewing and copying in mobile UI
+const localDiagnosticLogs: ClientLogEntry[] = [];
+
+export function getLocalDiagnosticLogs(): ClientLogEntry[] {
+  return [...localDiagnosticLogs];
+}
+
+export function clearLocalDiagnosticLogs(): void {
+  localDiagnosticLogs.length = 0;
+}
+
+/**
+ * Sends client diagnostic telemetry to the backend `/api/v1/system/client-logs` endpoint.
+ * This guarantees any error happening on the phone is visible on the backend terminal & copyable.
+ */
+export async function sendClientLog(
+  level: 'ERROR' | 'WARN' | 'INFO',
+  context: string,
+  message: string,
+  details?: Record<string, any>,
+  stack?: string
+): Promise<void> {
+  const entry: ClientLogEntry = {
+    id: `cli-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+    timestamp: new Date().toISOString(),
+    source: `mobile-${Platform.OS}`,
+    level,
+    context,
+    message,
+    stack,
+    details: {
+      ...details,
+      platform: Platform.OS,
+      apiBaseUrl: API_BASE_URL,
+    },
+  };
+
+  localDiagnosticLogs.unshift(entry);
+  if (localDiagnosticLogs.length > 50) {
+    localDiagnosticLogs.pop();
+  }
+
   try {
-    const res = await fetch(`${API_BASE_URL.replace("/api/v1", "")}/health`);
-    const data = await res.json();
-    return data.status === "ONLINE";
+    await fetch(`${API_BASE_URL}/system/client-logs`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(entry),
+    });
   } catch {
-    return false;
+    // If backend is unreachable, error is preserved in localDiagnosticLogs for viewing
+  }
+}
+
+export async function checkBackendHealth(): Promise<{ online: boolean; latencyMs: number; error?: string }> {
+  const t0 = Date.now();
+  try {
+    const healthUrl = `${API_BASE_URL.replace("/api/v1", "")}/health`;
+    const res = await fetch(healthUrl);
+    const latencyMs = Date.now() - t0;
+    if (!res.ok) {
+      await sendClientLog('WARN', 'checkBackendHealth', `Health responded with status ${res.status}`);
+      return { online: false, latencyMs, error: `HTTP ${res.status}` };
+    }
+    const data = await res.json();
+    return { online: data.status === "ONLINE", latencyMs };
+  } catch (err: any) {
+    const latencyMs = Date.now() - t0;
+    await sendClientLog('ERROR', 'checkBackendHealth', `Failed to reach ${API_BASE_URL}: ${err.message}`, { latencyMs });
+    return { online: false, latencyMs, error: err.message };
+  }
+}
+
+export async function fetchSystemDiagnostics(): Promise<any | null> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/system/diagnostics`);
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (err: any) {
+    await sendClientLog('ERROR', 'fetchSystemDiagnostics', err.message);
+    return null;
   }
 }
 
 export async function fetchDashboardStats(): Promise<DashboardStats | null> {
   try {
     const res = await fetch(`${API_BASE_URL}/dashboard/stats`);
-    if (!res.ok) return null;
+    if (!res.ok) {
+      await sendClientLog('WARN', 'fetchDashboardStats', `HTTP ${res.status}`);
+      return null;
+    }
     return await res.json();
-  } catch {
+  } catch (err: any) {
+    await sendClientLog('ERROR', 'fetchDashboardStats', err.message);
     return null;
   }
 }
@@ -83,9 +173,13 @@ export async function fetchDashboardStats(): Promise<DashboardStats | null> {
 export async function fetchSignals(): Promise<SignalItem[]> {
   try {
     const res = await fetch(`${API_BASE_URL}/signals`);
-    if (!res.ok) return [];
+    if (!res.ok) {
+      await sendClientLog('WARN', 'fetchSignals', `HTTP ${res.status}`);
+      return [];
+    }
     return await res.json();
-  } catch {
+  } catch (err: any) {
+    await sendClientLog('ERROR', 'fetchSignals', err.message);
     return [];
   }
 }
@@ -97,9 +191,14 @@ export async function runAnalysis(signalId: string): Promise<AnalysisSummary | n
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ signal_id: signalId }),
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      const errText = await res.text();
+      await sendClientLog('ERROR', 'runAnalysis', `HTTP ${res.status}: ${errText}`, { signalId });
+      return null;
+    }
     return await res.json();
-  } catch {
+  } catch (err: any) {
+    await sendClientLog('ERROR', 'runAnalysis', err.message, { signalId });
     return null;
   }
 }
@@ -109,7 +208,8 @@ export async function fetchAnalysis(analysisId: string): Promise<any | null> {
     const res = await fetch(`${API_BASE_URL}/analysis/${analysisId}`);
     if (!res.ok) return null;
     return await res.json();
-  } catch {
+  } catch (err: any) {
+    await sendClientLog('ERROR', 'fetchAnalysis', err.message, { analysisId });
     return null;
   }
 }
@@ -119,8 +219,73 @@ export async function fetchPersistence(analysisId: string): Promise<any | null> 
     const res = await fetch(`${API_BASE_URL}/analysis/${analysisId}/persistence`);
     if (!res.ok) return null;
     return await res.json();
-  } catch {
+  } catch (err: any) {
+    await sendClientLog('ERROR', 'fetchPersistence', err.message, { analysisId });
     return null;
+  }
+}
+
+/**
+ * Uploads an acoustic recording from the mobile device to the EchoSense backend.
+ * Normalizes file URI for Android / iOS and forwards all exceptions to backend telemetry.
+ */
+export async function uploadAudioSignal(
+  uri: string,
+  filename: string,
+  specimen: string = "Prestressed Concrete Girder G1"
+): Promise<SignalItem> {
+  try {
+    // Normalization: Ensure clean URI format across platforms
+    let fileUri = uri;
+    if (Platform.OS === 'android') {
+      if (!fileUri.startsWith('file://') && !fileUri.startsWith('content://')) {
+        fileUri = `file://${fileUri}`;
+      }
+    }
+
+    const formData = new FormData();
+    formData.append("file", {
+      uri: fileUri,
+      name: filename,
+      type: "audio/m4a",
+    } as any);
+    formData.append("specimen", specimen);
+
+    const uploadUrl = `${API_BASE_URL}/signals/upload`;
+    const res = await fetch(uploadUrl, {
+      method: "POST",
+      body: formData,
+      headers: {
+        Accept: "application/json",
+      },
+    });
+
+    if (!res.ok) {
+      let errorDetail = "";
+      try {
+        errorDetail = await res.text();
+      } catch {}
+      const errMsg = `Upload rejected (${res.status}): ${errorDetail || res.statusText}`;
+      await sendClientLog('ERROR', 'uploadAudioSignal', errMsg, {
+        rawUri: uri,
+        fileUri,
+        filename,
+        specimen,
+        status: res.status
+      });
+      throw new Error(errMsg);
+    }
+
+    const signalData: SignalItem = await res.json();
+    await sendClientLog('INFO', 'uploadAudioSignal', `Successfully uploaded signal ${signalData.id} (${signalData.filename})`);
+    return signalData;
+  } catch (err: any) {
+    await sendClientLog('ERROR', 'uploadAudioSignal', `Upload exception: ${err.message}`, {
+      uri,
+      filename,
+      stack: err.stack,
+    });
+    throw err;
   }
 }
 
