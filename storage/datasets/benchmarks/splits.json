@@ -1,0 +1,13 @@
+{
+  "dataset": "Siracusano & D'Angela AE Benchmarks",
+  "partitions": {
+    "train_events": 15000,
+    "test_events": 1650,
+    "classes": [
+      "Tensile Micro-Crack",
+      "Shear Interface Slip",
+      "Mixed Fracture"
+    ],
+    "cv_strategy": "Leave-One-Girder-Out (LOGO)"
+  }
+}
