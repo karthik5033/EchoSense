@@ -1,3 +1,7 @@
+# Mobile / Expo
+.expo/
+**/.expo/
+
 # Operating System Files
 .DS_Store
 Thumbs.db

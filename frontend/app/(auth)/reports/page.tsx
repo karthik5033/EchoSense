@@ -32,6 +32,8 @@ import {
 import { ASSESSMENT_REPORTS, AssessmentReport } from "@/lib/echosenseData";
 import { downloadDataAsCsv } from "@/lib/utils";
 
+import { api } from "@/lib/api";
+
 // Mock sensor array telemetry for the active report
 const SENSOR_CHANNELS = [
   { id: "CH-01", name: "Girder Midspan (R15α)", deltaT: "+0.0 µs (First Hit)", amp: "1.18 Vpp", energy: "2,450 pJ", status: "Primary Trigger" },
@@ -60,8 +62,14 @@ export default function AssessmentReportsPage() {
     });
   }, [reports, searchQuery, riskFilter]);
 
-  const handleDownloadPdf = (rep: AssessmentReport) => {
-    alert(`Downloading ${rep.title} (${rep.fileSize})... Generated from TopoAE analysis pipeline.`);
+  const handleDownloadPdf = async (rep: AssessmentReport) => {
+    try {
+      const runs = await api.analysis.list(1);
+      const runId = runs.length > 0 ? runs[0].id : "demo";
+      window.open(api.analysis.getReportPdfUrl(runId), "_blank");
+    } catch {
+      window.open("http://localhost:8000/api/v1/analysis/demo/report.pdf", "_blank");
+    }
   };
 
   const handleExportCsv = () => {

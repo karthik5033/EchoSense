@@ -50,7 +50,7 @@ class Conv1DAutoencoder(nn.Module):
         return reconstruction
 
 _AE_MODEL_INSTANCE: Conv1DAutoencoder | None = None
-_BASELINE_LOSS_STATS = {"mean": 0.0042, "std": 0.0018, "p99": 0.0095}
+_BASELINE_LOSS_STATS = {"mean": 0.000628, "std": 0.000103, "p99": 0.000898}
 
 def generate_baseline_healthy_signals(n_samples: int = 200, seq_len: int = 2048) -> torch.Tensor:
     """
