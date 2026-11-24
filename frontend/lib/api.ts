@@ -330,6 +330,45 @@ export const api = {
         };
       }>(`/analysis/${id}/persistence`),
 
+    topologyEngine: (id: string) =>
+      request<{
+        analysis_id: string;
+        signal_id: string;
+        specimen: string;
+        crack_mode: string;
+        confidence: number;
+        cdpi_score: number;
+        lead_time_ms: number;
+        embedding_dim: number;
+        delay_lag_tau: number;
+        entropy_h0: number;
+        entropy_h1: number;
+        points: Array<{ id: number; x: number; y: number; z: number }>;
+        persistence_pairs: Array<{ dim: number; birth: number; death: number }>;
+        betti_curves: Array<{ epsilon: number; betti_0: number; betti_1: number; ratio: number }>;
+        landscapes: {
+          t_bins: number[];
+          layers: Record<string, number[]>;
+        };
+        stability: Array<{ snr_db: number; wasserstein_dist: number; bottleneck_dist: number }>;
+        recurrence: {
+          matrix: number[][];
+          rr: number;
+          det: number;
+          lam: number;
+        };
+        manifold: Array<{
+          id: string;
+          x: number;
+          y: number;
+          cluster: string;
+          crack_mode: string;
+          confidence: number;
+          b1: number;
+          wDist: number;
+        }>;
+      }>(`/analysis/${id}/topology-engine`),
+
     evaluation: () =>
       request<{
         accuracy: number;
@@ -428,5 +467,66 @@ export const api = {
     getReportPdfUrl: (analysisId: string) => `${API_BASE}/analysis/${analysisId}/report.pdf`,
     getExportUrl: (analysisId: string, format: "csv" | "json") => `${API_BASE}/analysis/${analysisId}/export/${format}`,
     getBenchmark: () => request<any>("/analysis/benchmark/performance"),
+  },
+
+  // Wave Localization & Multi-Channel TDOA
+  localization: {
+    getHotspots: () =>
+      request<
+        Array<{
+          id: string;
+          name: string;
+          x: number;
+          z: number;
+          mode: string;
+          confidence: number;
+          cdpi_score: number;
+          analysis_id?: string;
+        }>
+      >("/localization/hotspots"),
+
+    getTelemetry: (x: number, z: number, mode = "Mode I Tensile", waveVelocity = 3850, jitterNs = 80) =>
+      request<{
+        event_position: {
+          true_x: number;
+          true_z: number;
+          estimated_x: number;
+          estimated_z: number;
+          spatial_error_mm: number;
+        };
+        trigger_sensor: string;
+        crack_mode: string;
+        wave_velocity_mps: number;
+        transducer_channels: Array<{
+          id: string;
+          name: string;
+          type: string;
+          mount: string;
+          x_pos_m: number;
+          z_pos_m: number;
+          color: string;
+          resonant_freq_khz: number;
+          distance_to_source_m: number;
+          delay_microseconds: number;
+          is_first_hit: boolean;
+          peak_vpp: number;
+          rise_time_us: number;
+          energy_aj: number;
+          counts: number;
+          duration_us: number;
+          ra_value: number;
+          svg_waveform_path: string;
+        }>;
+        solver_diagnostics: any;
+      }>(
+        `/localization/telemetry?x=${x}&z=${z}&mode=${encodeURIComponent(mode)}&wave_velocity=${waveVelocity}&jitter_ns=${jitterNs}`
+      ),
+
+    solve: (arrivalTimes: Record<string, number>, waveVelocity = 3850) =>
+      request<any>("/localization/solve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ arrival_times: arrivalTimes, wave_velocity: waveVelocity }),
+      }),
   },
 };

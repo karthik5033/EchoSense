@@ -2,7 +2,15 @@
 const nextConfig = {
   reactStrictMode: false,
   experimental: {
-    optimizePackageImports: ["lucide-react", "recharts", "three"],
+    optimizePackageImports: [
+      "lucide-react",
+      "recharts",
+      "three",
+      "framer-motion",
+      "clsx",
+      "tailwind-merge",
+      "class-variance-authority",
+    ],
   },
 };
 

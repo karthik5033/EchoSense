@@ -22,18 +22,51 @@ import { AppLogo } from "@/components/ui/AppLogo";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/lib/AuthContext";
 
-export const NAV_ITEMS = [
-  { label: "Overview", href: "/dashboard", icon: LayoutDashboard },
-  { label: "Signal Ingestion", href: "/upload", icon: Waves },
-  { label: "TDA Pipeline", href: "/analysis", icon: Activity },
-  { label: "Wave Localization", href: "/localization", icon: Crosshair },
-  { label: "Topology Engine", href: "/topology-engine", icon: Cpu },
-  { label: "Model Comparison", href: "/compare", icon: GitCompare },
-  { label: "Real-time Monitor", href: "/monitor", icon: Radio },
-  { label: "AE Datasets", href: "/datasets", icon: Database },
-  { label: "Assessment Reports", href: "/reports", icon: FileText },
-  { label: "Settings", href: "/settings", icon: Sliders },
+export interface NavItem {
+  label: string;
+  href: string;
+  icon: any;
+}
+
+export interface NavSection {
+  title: string;
+  items: NavItem[];
+}
+
+export const NAV_SECTIONS: NavSection[] = [
+  {
+    title: "Diagnostics & Monitoring",
+    items: [
+      { label: "Overview", href: "/dashboard", icon: LayoutDashboard },
+      { label: "Real-time Monitor", href: "/monitor", icon: Radio },
+    ],
+  },
+  {
+    title: "Analysis & Intelligence",
+    items: [
+      { label: "TDA Pipeline", href: "/analysis", icon: Activity },
+      { label: "Topology Engine", href: "/topology-engine", icon: Cpu },
+      { label: "Wave Localization", href: "/localization", icon: Crosshair },
+      { label: "Model Comparison", href: "/compare", icon: GitCompare },
+    ],
+  },
+  {
+    title: "Data Management",
+    items: [
+      { label: "Signal Ingestion", href: "/upload", icon: Waves },
+      { label: "AE Datasets", href: "/datasets", icon: Database },
+    ],
+  },
+  {
+    title: "System & Governance",
+    items: [
+      { label: "Assessment Reports", href: "/reports", icon: FileText },
+      { label: "Settings", href: "/settings", icon: Sliders },
+    ],
+  },
 ];
+
+export const NAV_ITEMS: NavItem[] = NAV_SECTIONS.flatMap((s) => s.items);
 
 export function AppSidebar() {
   const pathname = usePathname();
@@ -91,39 +124,50 @@ export function AppSidebar() {
         </div>
       )}
 
-      {/* Navigation List */}
-      <div className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
-        {!isCollapsed && (
-          <div className="px-3 pb-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">
-            Navigation
+      {/* Navigation List - Categorized Enterprise Sections */}
+      <div className="flex-1 overflow-y-auto px-3 py-3 space-y-4">
+        {NAV_SECTIONS.map((section, sIdx) => (
+          <div key={section.title} className="space-y-1">
+            {!isCollapsed ? (
+              <div className="px-3 pt-2 pb-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">
+                {section.title}
+              </div>
+            ) : sIdx > 0 ? (
+              <div className="my-2 border-t border-border/40 mx-2" />
+            ) : null}
+
+            {section.items.map((item) => {
+              const Icon = item.icon;
+              const isActive =
+                pathname === item.href ||
+                (item.href !== "/dashboard" && pathname?.startsWith(item.href + "/"));
+
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn(
+                    "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all group relative cursor-pointer",
+                    isActive
+                      ? "bg-secondary text-foreground font-semibold"
+                      : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                  )}
+                  title={isCollapsed ? item.label : undefined}
+                >
+                  <Icon
+                    className={cn(
+                      "h-4 w-4 shrink-0 transition-colors",
+                      isActive
+                        ? "text-[#FF5500]"
+                        : "text-muted-foreground group-hover:text-foreground"
+                    )}
+                  />
+                  {!isCollapsed && <span className="truncate flex-1">{item.label}</span>}
+                </Link>
+              );
+            })}
           </div>
-        )}
-
-        {NAV_ITEMS.map((item) => {
-          const Icon = item.icon;
-          const isActive =
-            pathname === item.href ||
-            (item.href !== "/dashboard" && pathname?.startsWith(item.href + "/"));
-
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all group relative cursor-pointer",
-                isActive
-                  ? "bg-secondary text-foreground font-semibold"
-                  : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
-              )}
-              title={isCollapsed ? item.label : undefined}
-            >
-              <Icon className={cn("h-4 w-4 shrink-0 transition-colors", isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground")} />
-              {!isCollapsed && (
-                <span className="truncate flex-1">{item.label}</span>
-              )}
-            </Link>
-          );
-        })}
+        ))}
       </div>
 
       {/* Role & User Footer */}

@@ -71,6 +71,57 @@ export default function AnalysisPage() {
   const [records, setRecords] = useState<AnalysisRecord[]>(RECENT_ANALYSES);
   const [selectedRecord, setSelectedRecord] = useState<AnalysisRecord>(RECENT_ANALYSES[0]);
   const [livePersistence, setLivePersistence] = useState<any>(null);
+  const [active3DTrajectory, setActive3DTrajectory] = useState<Array<[number, number, number]> | undefined>(undefined);
+
+  // Sync real persistence data when record selection changes
+  useEffect(() => {
+    if (!selectedRecord?.id) return;
+    api.analysis.persistence(selectedRecord.id).then(setLivePersistence).catch(() => {});
+    api.analysis.topologyEngine(selectedRecord.id).then((res) => {
+      if (res.points && res.points.length > 0) {
+        const pts: Array<[number, number, number]> = res.points.map((p: any) => [
+          (p.x - 240) / 80,
+          (p.y - 170) / 80,
+          p.z ?? 0
+        ]);
+        setActive3DTrajectory(pts);
+      }
+    }).catch(() => {});
+  }, [selectedRecord?.id]);
+
+  // Real persistence diagram points from Ripser C++ backend
+  const livePersistencePoints = React.useMemo(() => {
+    if (livePersistence?.persistence_pairs && livePersistence.persistence_pairs.length > 0) {
+      return livePersistence.persistence_pairs.map((p: any, idx: number) => ({
+        id: `pair-${idx}`,
+        dimension: p.dim,
+        birth: p.birth,
+        death: p.death,
+        persistence: Math.max(0, p.death - p.birth),
+      }));
+    }
+    return undefined;
+  }, [livePersistence]);
+
+  // Real barcode intervals from Ripser C++ backend
+  const liveBarcodeIntervals = React.useMemo(() => {
+    if (livePersistence?.barcode_intervals && livePersistence.barcode_intervals.length > 0) {
+      return livePersistence.barcode_intervals;
+    }
+    return undefined;
+  }, [livePersistence]);
+
+  // Real Betti curves from Ripser C++ backend
+  const liveBettiData = React.useMemo(() => {
+    if (livePersistence?.betti_curves && livePersistence.betti_curves.length > 0) {
+      return livePersistence.betti_curves.map((c: any) => ({
+        epsilon: c.epsilon,
+        beta0: c.betti_0,
+        beta1: c.betti_1,
+      }));
+    }
+    return undefined;
+  }, [livePersistence]);
 
   useEffect(() => {
     // 1. Fetch live analysis runs from backend
@@ -285,8 +336,8 @@ export default function AnalysisPage() {
 
           {/* Dual Visualizers: Takens Embedding + Persistence Diagram */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <TakensPhaseSpace />
-            <PersistenceDiagram />
+            <TakensPhaseSpace points3D={active3DTrajectory} />
+            <PersistenceDiagram points={livePersistencePoints} />
           </div>
 
           {/* Quick Stepper Action */}
@@ -367,7 +418,11 @@ export default function AnalysisPage() {
         <div className="space-y-6 animate-in fade-in duration-200">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             <div className="lg:col-span-8">
-              <TakensPhaseSpace initialDelay={selectedRecord.timeDelay} initialDim={selectedRecord.embeddingDim} />
+              <TakensPhaseSpace
+                initialDelay={selectedRecord.timeDelay}
+                initialDim={selectedRecord.embeddingDim}
+                points3D={active3DTrajectory}
+              />
             </div>
 
             <div className="lg:col-span-4 space-y-4">
@@ -410,13 +465,13 @@ export default function AnalysisPage() {
       {activeTab === "topology" && (
         <div className="space-y-6 animate-in fade-in duration-200">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <PersistenceDiagram />
-            <PersistenceBarcode />
+            <PersistenceDiagram points={livePersistencePoints} />
+            <PersistenceBarcode intervals={liveBarcodeIntervals} />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <PersistenceLandscape />
-            <BettiCurvesChart />
+            <BettiCurvesChart data={liveBettiData} />
           </div>
 
           {/* Topological Feature Summary Vector Table */}

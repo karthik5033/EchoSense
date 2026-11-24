@@ -11,12 +11,14 @@ interface TakensPhaseSpaceProps {
   className?: string;
   initialDelay?: number;
   initialDim?: number;
+  points3D?: Array<[number, number, number]>;
 }
 
 export function TakensPhaseSpace({
   className = "",
   initialDelay = 4,
   initialDim = 3,
+  points3D,
 }: TakensPhaseSpaceProps) {
   const [mode, setMode] = useState<"webgl" | "projection">("webgl");
   const [delay, setDelay] = useState(initialDelay);
@@ -35,7 +37,17 @@ export function TakensPhaseSpace({
   }, [isAutoRotating, mode]);
 
   // Generate 3D point cloud
-  const rawPoints = useMemo(() => generateTakensAttractor(220), []);
+  const rawPoints = useMemo(() => {
+    if (points3D && points3D.length > 0) {
+      return points3D.map((p: any, idx: number) => ({
+        x: Array.isArray(p) ? p[0] : p.x,
+        y: Array.isArray(p) ? p[1] : p.y,
+        z: Array.isArray(p) ? p[2] : p.z,
+        index: idx,
+      }));
+    }
+    return generateTakensAttractor(220);
+  }, [points3D]);
 
   // 3D Isometric projection to 2D screen
   const projectedPoints = useMemo(() => {

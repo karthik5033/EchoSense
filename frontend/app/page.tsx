@@ -658,13 +658,13 @@ export default function EchoSenseLandingPage() {
 
           <div className="flex items-center gap-4">
             <Link
-              href="/dashboard"
+              href="/analysis"
               className="text-sm font-[450] text-[#cfcfd8] hover:text-white transition-colors"
             >
-              Launch App
+              TDA Pipeline
             </Link>
             <Link
-              href="/analysis"
+              href="/dashboard"
               className="bg-[#FF5500] hover:bg-[#E54B00] text-white text-sm font-semibold px-4 py-1.5 rounded-lg shadow-[0_0_15px_rgba(255,85,0,0.35)] hover:shadow-[0_0_20px_rgba(255,85,0,0.55)] transition-all transform hover:-translate-y-0.5 active:translate-y-0"
             >
               Start Analysis
@@ -719,16 +719,16 @@ export default function EchoSenseLandingPage() {
         {/* Action Buttons */}
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3.5">
           <Link
-            href="/analysis"
+            href="/dashboard"
             className="bg-[#FF5500] hover:bg-[#E54B00] text-white font-medium px-5 py-2.5 rounded-lg shadow-[0_0_20px_rgba(255,85,0,0.35)] hover:shadow-[0_0_25px_rgba(255,85,0,0.55)] transition-all transform hover:-translate-y-0.5 active:translate-y-0 text-sm"
           >
-            Start analysis
+            Start Analysis
           </Link>
           <Link
-            href="/dashboard"
+            href="/analysis"
             className="bg-[#1e1e23] hover:bg-[#25252c] border border-[#2e2e37] text-[#d4d4d8] hover:text-white font-medium px-5 py-2.5 rounded-lg transition-all text-sm"
           >
-            Explore platform
+            TDA Pipeline Explorer
           </Link>
         </div>
 

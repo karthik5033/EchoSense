@@ -3,6 +3,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { api } from "@/lib/api";
 import {
   Activity,
   AlertTriangle,
@@ -90,10 +91,6 @@ const REGIME_PROGRESSION_DATA = {
     { label: "20:00", primaryHits: 34, precursorHits: 8, energyResidual: 0.09, bValue: 1.66, load: "Evening Taper" },
   ],
 };
-
-import { api } from "@/lib/api";
-
-type LoadingRegime = "monotonic" | "cyclic" | "ambient";
 
 export default function DashboardPage() {
   const router = useRouter();
