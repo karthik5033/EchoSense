@@ -42,11 +42,26 @@ import {
   CONFUSION_MATRIX,
   AnalysisRecord,
 } from "@/lib/echosenseData";
+import dynamic from "next/dynamic";
 import { PersistenceDiagram } from "@/components/tda/PersistenceDiagram";
-import { TakensPhaseSpace } from "@/components/tda/TakensPhaseSpace";
+import { PersistenceBarcode } from "@/components/tda/PersistenceBarcode";
+import { PersistenceLandscape } from "@/components/tda/PersistenceLandscape";
+import { BOCDStreamPlot } from "@/components/tda/BOCDStreamPlot";
 import { BettiCurvesChart } from "@/components/tda/BettiCurvesChart";
 import { SignalWaveformPlot } from "@/components/tda/SignalWaveformPlot";
 import { downloadDataAsCsv } from "@/lib/utils";
+
+const TakensPhaseSpace = dynamic(
+  () => import("@/components/tda/TakensPhaseSpace").then((m) => m.TakensPhaseSpace),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[400px] w-full flex items-center justify-center bg-[#12141A] rounded-xl border border-[#232630] text-slate-500 font-mono text-xs">
+        Loading 3D Attractor State Engine...
+      </div>
+    ),
+  }
+);
 
 type TabKey = "overview" | "preprocessing" | "takens" | "topology" | "classification" | "changepoints" | "anomalies";
 
@@ -344,6 +359,11 @@ export default function AnalysisPage() {
         <div className="space-y-6 animate-in fade-in duration-200">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <PersistenceDiagram />
+            <PersistenceBarcode />
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <PersistenceLandscape />
             <BettiCurvesChart />
           </div>
 
@@ -555,6 +575,8 @@ export default function AnalysisPage() {
             </CardHeader>
 
             <CardContent className="p-0 pt-4 space-y-4">
+              <BOCDStreamPlot className="mb-2" />
+
               {/* Timeline Diagram */}
               <div className="p-4 rounded-xl border border-border bg-muted/20">
                 <div className="flex items-center justify-between text-xs font-mono text-muted-foreground mb-3">

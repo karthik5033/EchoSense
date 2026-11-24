@@ -28,6 +28,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useWebSocketMonitoring } from "@/hooks/useWebSocketMonitoring";
 
 interface LiveHit {
   id: string;
@@ -50,6 +51,13 @@ export default function RealTimeMonitorPage() {
   // Physics animation state
   const [tick, setTick] = useState(0);
   const [burstCycle, setBurstCycle] = useState(0);
+
+  const {
+    status: wsStatus,
+    latestFrame,
+    waveformBuffer,
+    liveHits: wsLiveHits,
+  } = useWebSocketMonitoring("live-monitor", selectedChannel, isStreaming);
 
   const [liveHits, setLiveHits] = useState<LiveHit[]>([
     {
@@ -89,6 +97,8 @@ export default function RealTimeMonitorPage() {
       confidence: 0.88,
     },
   ]);
+
+  const activeHits = wsLiveHits && wsLiveHits.length > 0 ? wsLiveHits : liveHits;
 
   // Advance physical time clock
   useEffect(() => {
@@ -334,21 +344,6 @@ export default function RealTimeMonitorPage() {
               <text x="750" y="232" fill="#71717a" fontSize="9" fontFamily="monospace">250 kHz</text>
             </svg>
           )}
-
-          {/* Trigger Alert Badge Overlay */}
-          <div className="absolute top-4 right-4 backdrop-blur-md rounded-lg px-3 py-1.5 flex items-center gap-2 text-xs font-mono transition-all">
-            {hasPrecursor ? (
-              <div className="bg-[#FF5500]/15 border border-[#FF5500]/60 text-white rounded-lg px-3 py-1.5 flex items-center gap-2">
-                <ShieldAlert className="w-3.5 h-3.5 text-[#FF5500]" />
-                <span className="font-semibold">PRECURSOR EVENT CONFIRMED</span>
-              </div>
-            ) : (
-              <div className="bg-secondary/60 border border-border text-muted-foreground rounded-lg px-3 py-1.5 flex items-center gap-2">
-                <Activity className="w-3.5 h-3.5 text-zinc-400" />
-                <span>STREAM ACQUIRING (Baseline Noise: 0.05 Vpp)</span>
-              </div>
-            )}
-          </div>
         </div>
 
         {/* Scope Footer Metadata */}
@@ -356,14 +351,20 @@ export default function RealTimeMonitorPage() {
           <span>Sweep Window: -{windowSize} to now</span>
           <div className="flex items-center gap-4">
             <span className="text-foreground/90 font-medium">
-              Peak AE Voltage: {peakVpp} Vpp
+              Peak AE Voltage: {latestFrame ? `${latestFrame.amplitude_v} Vpp` : `${peakVpp} Vpp`}
             </span>
             <span>•</span>
             <span className="text-foreground/90">
-              Ringing Frequency: 148.6 kHz
+              Frequency: {latestFrame ? `${latestFrame.peak_frequency_khz} kHz` : "148.6 kHz"}
+            </span>
+            <span>•</span>
+            <span className={wsStatus === "connected" ? "text-emerald-500 font-bold" : "text-zinc-400"}>
+              {wsStatus === "connected" ? "WebSocket 10 Hz Live" : "Local Telemetry Stream"}
             </span>
           </div>
-          <span className="text-muted-foreground">PTP Lock Jitter: &lt; 42 ns</span>
+          <span className={hasPrecursor || latestFrame?.bocd_alarm ? "text-[#FF5500] font-bold" : "text-muted-foreground"}>
+            {hasPrecursor || latestFrame?.bocd_alarm ? "PRECURSOR EVENT CONFIRMED" : "NOMINAL REGIME"}
+          </span>
         </div>
       </Card>
 
@@ -432,7 +433,7 @@ export default function RealTimeMonitorPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {liveHits.map((hit) => (
+                {activeHits.map((hit) => (
                   <TableRow key={hit.id} className="border-border hover:bg-muted/30">
                     <TableCell className="font-mono text-xs text-foreground/80 font-medium">{hit.id}</TableCell>
                     <TableCell className="font-mono text-xs text-muted-foreground">{hit.time}</TableCell>

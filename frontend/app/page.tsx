@@ -39,9 +39,29 @@ import {
   Pause,
   RotateCw,
 } from "lucide-react";
-import { TakensPhaseSpace } from "@/components/tda/TakensPhaseSpace";
-import { PersistenceDiagram } from "@/components/tda/PersistenceDiagram";
-import { BettiCurvesChart } from "@/components/tda/BettiCurvesChart";
+import dynamic from "next/dynamic";
+
+const TakensPhaseSpace = dynamic(
+  () => import("@/components/tda/TakensPhaseSpace").then((m) => m.TakensPhaseSpace),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[400px] w-full flex items-center justify-center bg-[#12141A] rounded-xl border border-[#232630] text-slate-500 font-mono text-xs">
+        Loading 3D Attractor State Engine...
+      </div>
+    ),
+  }
+);
+
+const PersistenceDiagram = dynamic(
+  () => import("@/components/tda/PersistenceDiagram").then((m) => m.PersistenceDiagram),
+  { ssr: false }
+);
+
+const BettiCurvesChart = dynamic(
+  () => import("@/components/tda/BettiCurvesChart").then((m) => m.BettiCurvesChart),
+  { ssr: false }
+);
 
 // Scientific and Engineering Stacks for TopoAE
 const FRAMEWORKS = [
