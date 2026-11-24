@@ -1,104 +1,264 @@
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, TextInput, ActivityIndicator, Alert } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  StyleSheet,
+  Text,
+  View,
+  TouchableOpacity,
+  TextInput,
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  Platform,
+} from 'react-native';
+import {
+  uploadAudioSignal,
+  runAnalysis,
+  AnalysisSummary,
+  sendClientLog,
+  API_BASE_URL,
+} from '../api';
+import { AcousticOscilloscope } from '../components/AcousticOscilloscope';
+import { DiagnosticModal } from '../components/DiagnosticModal';
+import { useAcousticSensor } from '../hooks/useAcousticSensor';
 
-export function RecordScreen({ onRecordingFinished }: { onRecordingFinished?: (signalId?: string) => void }) {
+interface RecordScreenProps {
+  onRecordingFinished?: (signalId: string, result?: AnalysisSummary) => void;
+}
+
+export function RecordScreen({ onRecordingFinished }: RecordScreenProps) {
+  // Ultra-responsive acoustic sensor hook (laptop mic + mobile MEMS array)
+  const micSensor = useAcousticSensor(true);
+
   const [isRecording, setIsRecording] = useState(false);
-  const [recordSeconds, setRecordSeconds] = useState(0);
-  const [peakV, setPeakV] = useState(0.08);
+  const [durationSec, setDurationSec] = useState(0);
   const [specimen, setSpecimen] = useState('Prestressed Concrete Girder G1');
   const [locationNote, setLocationNote] = useState('Midspan Station 4 - Sensor #2');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
+  const [showDiagnostics, setShowDiagnostics] = useState<boolean>(false);
 
+  // Web MediaRecorder references for laptop audio capture
+  const webMediaRecorderRef = useRef<any>(null);
+  const webChunksRef = useRef<any[]>([]);
+  const timerRef = useRef<any>(null);
+
+  // Recording timer
   useEffect(() => {
-    let interval: NodeJS.Timeout | null = null;
     if (isRecording) {
-      interval = setInterval(() => {
-        setRecordSeconds((prev) => prev + 1);
-        // Simulate real-time microphone VU meter oscillation
-        const noise = Math.random() * 0.15;
-        const transient = Math.random() < 0.15 ? Math.random() * 0.95 : 0;
-        setPeakV(parseFloat((0.08 + noise + transient).toFixed(2)));
-      }, 500);
+      setDurationSec(0);
+      timerRef.current = setInterval(() => {
+        setDurationSec((prev) => prev + 1);
+      }, 1000);
+    } else {
+      if (timerRef.current) clearInterval(timerRef.current);
     }
     return () => {
-      if (interval) clearInterval(interval);
+      if (timerRef.current) clearInterval(timerRef.current);
     };
   }, [isRecording]);
 
-  const toggleRecording = () => {
-    if (!isRecording) {
-      setIsRecording(true);
-      setRecordSeconds(0);
-      setUploadStatus(null);
-    } else {
-      setIsRecording(false);
-      handleSaveAndUpload();
+  const startRecording = async () => {
+    try {
+      if (Platform.OS === 'web') {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const mediaRecorder = new (window as any).MediaRecorder(stream);
+        webChunksRef.current = [];
+
+        mediaRecorder.ondataavailable = (e: any) => {
+          if (e.data && e.data.size > 0) {
+            webChunksRef.current.push(e.data);
+          }
+        };
+
+        mediaRecorder.start();
+        webMediaRecorderRef.current = mediaRecorder;
+        setIsRecording(true);
+        setUploadStatus(null);
+        await sendClientLog('INFO', 'startRecording.web', 'Web audio acquisition recording started');
+      } else {
+        // Native mobile phone recording
+        if (micSensor.rawRecorder) {
+          await micSensor.rawRecorder.prepareToRecordAsync();
+          micSensor.rawRecorder.record();
+          setIsRecording(true);
+          setUploadStatus(null);
+          await sendClientLog('INFO', 'startRecording.native', 'Mobile MEMS acquisition started');
+        }
+      }
+    } catch (err: any) {
+      await sendClientLog('ERROR', 'startRecording', err.message);
+      Alert.alert('Microphone Access Error', err.message || 'Could not start acoustic acquisition.');
     }
   };
 
-  const handleSaveAndUpload = async () => {
-    setIsUploading(true);
-    setUploadStatus('Processing 48 kHz PCM stream & segmenting bursts...');
+  const stopAndUpload = async () => {
+    try {
+      setIsUploading(true);
+      setIsRecording(false);
+      setUploadStatus('Finalizing audio stream & packaging PCM envelope...');
 
-    // Simulate chunked background upload
-    setTimeout(() => {
+      let uploadedSignal = null;
+
+      if (Platform.OS === 'web') {
+        if (!webMediaRecorderRef.current) {
+          throw new Error('No active web media recording stream found.');
+        }
+
+        const stoppedPromise = new Promise<Blob>((resolve) => {
+          webMediaRecorderRef.current.onstop = () => {
+            const blob = new Blob(webChunksRef.current, { type: 'audio/webm' });
+            resolve(blob);
+          };
+        });
+
+        webMediaRecorderRef.current.stop();
+        const audioBlob = await stoppedPromise;
+
+        const filename = `mems_laptop_recording_${Date.now()}.webm`;
+        const formData = new FormData();
+        formData.append('file', audioBlob, filename);
+        formData.append('specimen', specimen);
+
+        setUploadStatus('Uploading recording to EchoSense API...');
+        const res = await fetch(`${API_BASE_URL}/signals/upload`, {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!res.ok) {
+          const errText = await res.text();
+          throw new Error(`Upload failed (${res.status}): ${errText}`);
+        }
+        uploadedSignal = await res.json();
+      } else {
+        // Native phone audio upload
+        if (!micSensor.rawRecorder) {
+          throw new Error('Native recorder unavailable.');
+        }
+        await micSensor.rawRecorder.stop();
+        const uri = micSensor.rawRecorder.uri;
+        if (!uri) throw new Error('Recording ended with no audio URI.');
+
+        const filename = `mems_recording_${Date.now()}.m4a`;
+        setUploadStatus('Uploading recording to EchoSense API...');
+        uploadedSignal = await uploadAudioSignal(uri, filename, specimen);
+      }
+
+      if (!uploadedSignal) {
+        throw new Error('Server rejected acoustic recording upload.');
+      }
+
+      setUploadStatus('Upload successful! Running TDA & ML inference pipeline...');
+      const analysisResult = await runAnalysis(uploadedSignal.id);
+
+      if (analysisResult) {
+        setUploadStatus('Topological classification complete!');
+        if (onRecordingFinished) {
+          onRecordingFinished(uploadedSignal.id, analysisResult);
+        }
+      } else {
+        setUploadStatus(`Signal ${uploadedSignal.id} uploaded and indexed successfully.`);
+        if (onRecordingFinished) {
+          onRecordingFinished(uploadedSignal.id);
+        }
+      }
+    } catch (err: any) {
+      await sendClientLog('ERROR', 'stopAndUpload', err.message);
+      Alert.alert(
+        'Upload / Analysis Error',
+        `${err.message}\n\nDiagnostic logs forwarded to backend. Tap Diagnostics to view system status.`,
+        [
+          { text: 'OK', style: 'cancel' },
+          { text: 'View Diagnostics', onPress: () => setShowDiagnostics(true) },
+        ]
+      );
+      setUploadStatus(null);
+    } finally {
       setIsUploading(false);
-      setUploadStatus('Recording uploaded & indexed. STA/LTA slices generated.');
-      onRecordingFinished?.();
-    }, 1200);
+    }
+  };
+
+  const toggleRecording = () => {
+    if (isRecording) {
+      stopAndUpload();
+    } else {
+      startRecording();
+    }
+  };
+
+  const formatSec = (secs: number) => {
+    const m = Math.floor(secs / 60).toString().padStart(2, '0');
+    const s = (secs % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
   };
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      {/* Diagnostics Modal */}
+      <DiagnosticModal
+        visible={showDiagnostics}
+        onClose={() => setShowDiagnostics(false)}
+        micPermissionGranted={micSensor.permissionGranted}
+        liveDbLevel={isRecording ? micSensor.peakV : undefined}
+      />
+
       <View style={styles.recordCard}>
-        <Text style={styles.title}>Smartphone Acoustic Field Sensor</Text>
+        {/* Header & Subsystem quick link */}
+        <View style={styles.cardHeaderRow}>
+          <Text style={styles.title}>Smartphone Acoustic Field Sensor</Text>
+          <TouchableOpacity
+            style={styles.diagBtn}
+            onPress={() => setShowDiagnostics(true)}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.diagBtnText}>Diagnostics</Text>
+          </TouchableOpacity>
+        </View>
+
         <Text style={styles.desc}>
-          Acquires high-frequency structural acoustic transients using smartphone MEMS microphone array calibrated to ASTM E1316.
+          Acquires live real-time structural acoustic transients using the microphone calibrated to ASTM E1316.
         </Text>
 
-        {/* Live VU Meter Display */}
-        <View style={styles.meterContainer}>
-          <Text style={styles.meterValue}>
-            {isRecording
-              ? `${Math.floor(recordSeconds / 60).toString().padStart(2, '0')}:${(recordSeconds % 60).toString().padStart(2, '0')}`
-              : '00:00'}
-          </Text>
+        {/* Live Audio Oscilloscope Display with real physical microphone audio */}
+        <AcousticOscilloscope
+          waveform={micSensor.waveform}
+          peakV={micSensor.peakV}
+          freqKhz={48.0}
+          rms={micSensor.rms}
+          sourceLabel={isRecording ? "RECORDING ACTIVE" : "LIVE MIC SENSOR"}
+          isLive={true}
+          fftData={micSensor.fftBands}
+        />
 
-          <View style={styles.vMeterBar}>
-            <View
-              style={[
-                styles.vMeterFill,
-                { width: `${Math.min(100, (peakV / 1.5) * 100)}%` },
-                peakV > 0.6 ? styles.vMeterCritical : styles.vMeterNominal,
-              ]}
-            />
-          </View>
+        {/* Digital Time & Vpp Readout */}
+        <View style={styles.meterContainer}>
+          <Text style={styles.meterValue}>{formatSec(durationSec)}</Text>
           <Text style={styles.meterSub}>
-            Peak: {peakV.toFixed(2)} Vpp • Rate: 48.0 kHz • 24-bit PCM
+            Peak: {micSensor.peakV.toFixed(2)} Vpp • Rate: 48.0 kHz • 24-bit PCM
           </Text>
         </View>
 
-        {/* Start / Stop Trigger */}
+        {/* Start / Stop Trigger Button */}
         <TouchableOpacity
           style={[styles.recordBtn, isRecording ? styles.recordBtnActive : styles.recordBtnIdle]}
           onPress={toggleRecording}
           disabled={isUploading}
+          activeOpacity={0.8}
         >
           <View style={[styles.recIndicator, isRecording && styles.recIndicatorStop]} />
           <Text style={styles.recordBtnText}>
-            {isRecording ? 'Stop & Upload Field Recording' : 'Start Acoustic Acquisition'}
+            {isRecording ? 'Stop & Run Topological Analysis' : 'Start Acoustic Acquisition'}
           </Text>
         </TouchableOpacity>
 
         {isUploading && (
           <View style={styles.loadingBox}>
             <ActivityIndicator size="small" color="#FF5500" />
-            <Text style={styles.loadingText}>Uploading to EchoSense Backend...</Text>
+            <Text style={styles.loadingText}>Processing pipeline on backend...</Text>
           </View>
         )}
 
-        {uploadStatus && (
+        {uploadStatus && !isUploading && (
           <View style={styles.statusBox}>
             <Text style={styles.statusSuccess}>✓ {uploadStatus}</Text>
           </View>
@@ -132,11 +292,11 @@ export function RecordScreen({ onRecordingFinished }: { onRecordingFinished?: (s
         </View>
 
         <View style={styles.metaRow}>
-          <Text style={styles.metaLabel}>GPS Telemetry:</Text>
-          <Text style={styles.metaValue}>37.7749° N, 122.4194° W (&plusmn;2m)</Text>
+          <Text style={styles.metaLabel}>Hardware Protocol:</Text>
+          <Text style={styles.metaValue}>MEMS Audio PCM • 48 kHz / 24-bit</Text>
         </View>
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
@@ -149,13 +309,34 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     borderColor: '#272733',
-    padding: 18,
-    gap: 14,
+    padding: 16,
+    gap: 12,
+  },
+  cardHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  diagBtn: {
+    backgroundColor: '#1E293B',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
+  diagBtnText: {
+    color: '#94A3B8',
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
   title: {
     color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 15,
+    fontWeight: '800',
+    fontFamily: 'monospace',
+    flex: 1,
   },
   desc: {
     color: '#A1A1AA',
@@ -163,49 +344,29 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   meterContainer: {
-    backgroundColor: '#0C1017',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#272733',
-    padding: 16,
     alignItems: 'center',
-    gap: 10,
+    paddingVertical: 8,
+    gap: 4,
   },
   meterValue: {
     color: '#FFFFFF',
     fontSize: 32,
-    fontWeight: '800',
+    fontWeight: '900',
     fontFamily: 'monospace',
-  },
-  vMeterBar: {
-    width: '100%',
-    height: 10,
-    backgroundColor: '#1E1E28',
-    borderRadius: 5,
-    overflow: 'hidden',
-  },
-  vMeterFill: {
-    height: '100%',
-    borderRadius: 5,
-  },
-  vMeterNominal: {
-    backgroundColor: '#FF5500',
-  },
-  vMeterCritical: {
-    backgroundColor: '#EF4444',
   },
   meterSub: {
     color: '#71717A',
-    fontSize: 11,
+    fontSize: 10,
     fontFamily: 'monospace',
   },
   recordBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 14,
-    borderRadius: 12,
     gap: 10,
+    paddingVertical: 14,
+    borderRadius: 10,
+    marginTop: 4,
   },
   recordBtnIdle: {
     backgroundColor: '#FF5500',
@@ -224,53 +385,56 @@ const styles = StyleSheet.create({
   },
   recordBtnText: {
     color: '#FFFFFF',
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
+    fontFamily: 'monospace',
   },
   loadingBox: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    paddingVertical: 8,
+    paddingVertical: 10,
   },
   loadingText: {
-    color: '#A1A1AA',
-    fontSize: 12,
+    color: '#FF5500',
+    fontSize: 11,
     fontFamily: 'monospace',
   },
   statusBox: {
-    backgroundColor: '#16281E',
+    backgroundColor: '#0F291E',
     borderWidth: 1,
-    borderColor: '#22C55E40',
+    borderColor: '#10B981',
     borderRadius: 8,
     padding: 10,
   },
   statusSuccess: {
-    color: '#4ADE80',
-    fontSize: 12,
+    color: '#34D399',
+    fontSize: 11,
     fontFamily: 'monospace',
   },
   paramsCard: {
     backgroundColor: '#16161C',
-    borderRadius: 16,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: '#272733',
-    padding: 16,
+    padding: 14,
     gap: 12,
+    marginTop: 10,
+    marginBottom: 20,
   },
   paramTitle: {
     color: '#FFFFFF',
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
-    marginBottom: 4,
+    fontFamily: 'monospace',
   },
   fieldGroup: {
-    gap: 4,
+    gap: 6,
   },
   fieldLabel: {
-    color: '#A1A1AA',
-    fontSize: 11,
+    color: '#71717A',
+    fontSize: 10,
     fontFamily: 'monospace',
   },
   input: {
@@ -279,7 +443,7 @@ const styles = StyleSheet.create({
     borderColor: '#272733',
     borderRadius: 8,
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingVertical: 10,
     color: '#FFFFFF',
     fontSize: 12,
   },
@@ -288,15 +452,16 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: '#272733',
+    borderTopColor: '#22222E',
   },
   metaLabel: {
     color: '#71717A',
-    fontSize: 11,
+    fontSize: 10,
+    fontFamily: 'monospace',
   },
   metaValue: {
-    color: '#A1A1AA',
-    fontSize: 11,
+    color: '#D4D4D8',
+    fontSize: 10,
     fontFamily: 'monospace',
   },
 });

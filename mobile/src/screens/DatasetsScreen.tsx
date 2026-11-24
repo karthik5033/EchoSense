@@ -15,31 +15,11 @@ export function DatasetsScreen({ onViewAnalysis }: DatasetsScreenProps) {
   const loadData = async () => {
     setLoading(true);
     const data = await fetchSignals();
+    setSignals(data);
     if (data.length > 0) {
-      setSignals(data);
       setSelectedSignalId(data[0].id);
     } else {
-      // Fallback signals
-      const fallback: SignalItem[] = [
-        {
-          id: 'sig-01',
-          filename: 'AE_GIRDER_G1_EXP4_10MHZ.wav',
-          sample_rate: 10000000,
-          duration_sec: 10.0,
-          peak_amplitude_v: 1.18,
-          status: 'INDEXED',
-        },
-        {
-          id: 'sig-02',
-          filename: 'SMARTPHONE_MEMS_CONCRETE_CRACK.wav',
-          sample_rate: 48000,
-          duration_sec: 30.0,
-          peak_amplitude_v: 0.42,
-          status: 'INDEXED',
-        },
-      ];
-      setSignals(fallback);
-      setSelectedSignalId(fallback[0].id);
+      setSelectedSignalId(null);
     }
     setLoading(false);
   };
@@ -84,6 +64,16 @@ export function DatasetsScreen({ onViewAnalysis }: DatasetsScreenProps) {
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="small" color="#FF5500" />
           <Text style={styles.loadingText}>Loading ingested acoustic recordings...</Text>
+        </View>
+      ) : signals.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyTitle}>No Ingested Signals Found</Text>
+          <Text style={styles.emptySub}>
+            Record live acoustic transients using the smartphone sensor in the Record tab, or upload signals from the web dashboard.
+          </Text>
+          <TouchableOpacity onPress={loadData} style={styles.retryBtn}>
+            <Text style={styles.retryBtnText}>Retry Connection</Text>
+          </TouchableOpacity>
         </View>
       ) : (
         <ScrollView style={styles.scrollArea} showsVerticalScrollIndicator={false}>
@@ -250,5 +240,40 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 12,
     fontWeight: '700',
+  },
+  emptyContainer: {
+    backgroundColor: '#16161C',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#272733',
+    padding: 24,
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 20,
+  },
+  emptyTitle: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
+    fontFamily: 'monospace',
+  },
+  emptySub: {
+    color: '#A1A1AA',
+    fontSize: 12,
+    textAlign: 'center',
+    lineHeight: 18,
+  },
+  retryBtn: {
+    backgroundColor: '#272733',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginTop: 6,
+  },
+  retryBtnText: {
+    color: '#FF5500',
+    fontSize: 12,
+    fontWeight: '700',
+    fontFamily: 'monospace',
   },
 });

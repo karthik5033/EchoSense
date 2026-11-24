@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, SafeAreaView, ActivityIndicator } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { fetchDashboardStats, checkBackendHealth, DashboardStats, AnalysisSummary } from './src/api';
+import { DiagnosticModal } from './src/components/DiagnosticModal';
 import { TelemetryScreen } from './src/screens/TelemetryScreen';
 import { RecordScreen } from './src/screens/RecordScreen';
 import { DatasetsScreen } from './src/screens/DatasetsScreen';
@@ -14,12 +15,13 @@ export default function App() {
   const [loading, setLoading] = useState<boolean>(true);
   const [activeTab, setActiveTab] = useState<'monitor' | 'record' | 'datasets' | 'system' | 'analysis'>('monitor');
   const [selectedAnalysis, setSelectedAnalysis] = useState<AnalysisSummary | null>(null);
+  const [showDiagnostics, setShowDiagnostics] = useState<boolean>(false);
 
   const loadData = async () => {
     setLoading(true);
-    const online = await checkBackendHealth();
-    setIsOnline(online);
-    if (online) {
+    const health = await checkBackendHealth();
+    setIsOnline(health.online);
+    if (health.online) {
       const data = await fetchDashboardStats();
       setStats(data);
     }
@@ -46,15 +48,24 @@ export default function App() {
           </View>
         </View>
 
-        <TouchableOpacity 
-          onPress={loadData}
-          activeOpacity={0.7}
-          style={[styles.statusPill, isOnline ? styles.statusOnline : styles.statusOffline]}
-        >
-          <View style={[styles.statusDot, isOnline ? styles.dotOnline : styles.dotOffline]} />
-          <Text style={styles.statusText}>{isOnline ? 'LIVE API' : 'OFFLINE (TAP RETRY)'}</Text>
-        </TouchableOpacity>
+        <View style={styles.headerRightRow}>
+          <TouchableOpacity 
+            onPress={() => setShowDiagnostics(true)}
+            activeOpacity={0.7}
+            style={[styles.statusPill, isOnline ? styles.statusOnline : styles.statusOffline]}
+          >
+            <View style={[styles.statusDot, isOnline ? styles.dotOnline : styles.dotOffline]} />
+            <Text style={styles.statusText}>{isOnline ? 'LIVE API' : 'OFFLINE'}</Text>
+          </TouchableOpacity>
+        </View>
       </View>
+
+      {/* Global Subsystem Diagnostic & Log Modal */}
+      <DiagnosticModal
+        visible={showDiagnostics}
+        onClose={() => setShowDiagnostics(false)}
+        micPermissionGranted={true}
+      />
 
       {/* Navigation Tabs */}
       <View style={styles.tabBar}>
@@ -96,7 +107,7 @@ export default function App() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
+      <View style={styles.content}>
         {loading ? (
           <View style={styles.centerBox}>
             <ActivityIndicator size="large" color="#FF5500" />
@@ -105,7 +116,18 @@ export default function App() {
         ) : (
           <>
             {activeTab === 'monitor' && <TelemetryScreen stats={stats} />}
-            {activeTab === 'record' && <RecordScreen onRecordingFinished={() => setActiveTab('datasets')} />}
+            {activeTab === 'record' && (
+              <RecordScreen
+                onRecordingFinished={(signalId, result) => {
+                  if (result) {
+                    setSelectedAnalysis(result);
+                    setActiveTab('analysis');
+                  } else {
+                    setActiveTab('datasets');
+                  }
+                }}
+              />
+            )}
             {activeTab === 'datasets' && (
               <DatasetsScreen
                 onViewAnalysis={(res) => {
@@ -121,15 +143,9 @@ export default function App() {
               />
             )}
             {activeTab === 'system' && <SystemScreen />}
-
-            {activeTab !== 'analysis' && (
-              <TouchableOpacity style={styles.refreshButton} onPress={loadData}>
-                <Text style={styles.refreshButtonText}>Refresh Telemetry</Text>
-              </TouchableOpacity>
-            )}
           </>
         )}
-      </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }
@@ -153,6 +169,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
+  },
+  headerRightRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   logoBadge: {
     width: 36,
@@ -237,6 +258,7 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+    padding: 16,
   },
   contentContainer: {
     padding: 16,
