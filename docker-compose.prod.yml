@@ -1,0 +1,85 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: echosense_prod_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-echosense_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ChangeMeInProductionSecret2026}
+      POSTGRES_DB: ${POSTGRES_DB:-echosense_production}
+    volumes:
+      - prod_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-echosense_admin} -d ${POSTGRES_DB:-echosense_production}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - echosense_prod_net
+
+  redis:
+    image: redis:7.2-alpine
+    container_name: echosense_prod_redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-ChangeMeRedisPass2026}
+    volumes:
+      - prod_redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-ChangeMeRedisPass2026}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - echosense_prod_net
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: echosense_prod_api
+    restart: unless-stopped
+    environment:
+      ENVIRONMENT: production
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-echosense_admin}:${POSTGRES_PASSWORD:-ChangeMeInProductionSecret2026}@postgres:5432/${POSTGRES_DB:-echosense_production}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-ChangeMeRedisPass2026}@redis:6379/0
+      SECRET_KEY: ${SECRET_KEY:-ChangeMeProductionSecret340msLeadTimeKey2026}
+      UPLOAD_DIR: /app/storage/uploads
+      DATASET_DIR: /app/storage/datasets
+      MODEL_DIR: /app/storage/models
+    ports:
+      - "8000:8000"
+    volumes:
+      - prod_storage:/app/storage
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - echosense_prod_net
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: echosense_prod_web
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: http://backend:8000
+      NEXT_PUBLIC_WS_URL: ws://backend:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - echosense_prod_net
+
+networks:
+  echosense_prod_net:
+    driver: bridge
+
+volumes:
+  prod_pgdata:
+  prod_redisdata:
+  prod_storage:

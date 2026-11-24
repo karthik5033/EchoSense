@@ -1,0 +1,12 @@
+{
+  "name": "echosense-workspace",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev:backend": "python -m uvicorn app.main:app --app-dir backend --reload --port 8000",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "dev:mobile": "npm start --prefix mobile",
+    "seed:backend": "python backend/app/scripts/seed_db.py",
+    "build:frontend": "npm run build --prefix frontend"
+  }
+}
